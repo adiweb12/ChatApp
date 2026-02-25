@@ -33,7 +33,7 @@ class _LoginPageState extends State<LoginPage> {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Login Failed: Check credentials")));
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Server Error. Is Render awake?")));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Server Error. Check internet connection or try again....")));
     } finally {
       setState(() => _isLoading = false);
     }
