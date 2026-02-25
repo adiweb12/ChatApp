@@ -1,81 +1,27 @@
 import 'package:flutter/material.dart';
+import 'login.dart';
 
-void main() => runApp(const MaterialApp(home: LoginPage()));
+void main() => runApp(const ChatApp());
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
-
-  @override
-  State<LoginPage> createState() => _LoginPageState();
-}
-
-class _LoginPageState extends State<LoginPage> {
-  final _formKey = GlobalKey<FormState>();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-
-  void _handleLogin() {
-    if (_formKey.currentState!.validate()) {
-      // Mock logic for testing
-      if (_emailController.text == "test@test.com" && _passwordController.text == "123456") {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Login Successful!')),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Invalid Credentials (Use: test@test.com / 123456)')),
-        );
-      }
-    }
-  }
+class ChatApp extends StatelessWidget {
+  const ChatApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text(
-                "Welcome Back",
-                style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 40),
-              TextFormField(
-                controller: _emailController,
-                decoration: const InputDecoration(
-                  labelText: "Email",
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.email),
-                ),
-                validator: (value) => value!.isEmpty ? "Enter an email" : null,
-              ),
-              const SizedBox(height: 20),
-              TextFormField(
-                controller: _passwordController,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: "Password",
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.lock),
-                ),
-                validator: (value) => value!.length < 6 ? "Password too short" : null,
-              ),
-              const SizedBox(height: 30),
-              ElevatedButton(
-                onPressed: _handleLogin,
-                style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 15)),
-                child: const Text("Login", style: TextStyle(fontSize: 18)),
-              ),
-            ],
-          ),
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.dark,
+        colorSchemeSeed: Colors.blueAccent,
+        scaffoldBackgroundColor: const Color(0xFF0A0A0A),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: Colors.grey[900],
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
         ),
       ),
+      home: const LoginPage(),
     );
   }
 }
