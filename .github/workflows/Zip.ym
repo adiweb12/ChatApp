@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# Configuration
+ZIP_FILE="my_chat_app.zip"
+TARGET_DIR="."  # Unzip into the current directory
+
+echo "📂 Extracting $ZIP_FILE into the repository..."
+
+# 1. Unzip and overwrite existing files
+# -o: overwrite without prompting
+# -x: exclude the script itself and the zip (to avoid corruption)
+unzip -o $ZIP_FILE -d $TARGET_DIR -x "sync.sh"
+
+# 2. Git Workflow
+echo "git Adding changes..."
+git add .
+
+# 3. Commit with a timestamp
+TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
+git commit -m "Auto-update from zip: $TIMESTAMP"
+
+# 4. Push to the current branch
+echo "🚀 Pushing to GitHub..."
+git push origin $(git rev-parse --abbrev-ref HEAD)
+
+echo "✅ Sync complete!"
