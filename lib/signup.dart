@@ -17,41 +17,46 @@ class _SignUpPageState extends State<SignUpPage> {
   final _otp = TextEditingController();
   bool _isLoading = false;
 
-  // Step 1: Submit Details to Backend
   Future<void> _requestOtp() async {
+    if (_email.text.isEmpty || _phone.text.isEmpty || _pass.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Fill all fields")));
+      return;
+    }
+
     setState(() => _isLoading = true);
     try {
       final response = await http.post(
         Uri.parse("${ApiConfig.baseUrl}/signup-request"),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
-          "email": _email.text,
-          "phone": _phone.text,
+          "email": _email.text.trim(),
+          "phone": _phone.text.trim(),
           "password": _pass.text,
         }),
       );
 
       if (response.statusCode == 200) {
         _showOtpDialog();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Signup request failed")));
       }
     } catch (e) {
-      print("Error: $e");
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Error connecting to Render")));
     } finally {
       setState(() => _isLoading = false);
     }
   }
 
-  // Step 2: Verify OTP
   void _showOtpDialog() {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text("Verify Email"),
+        title: const Text("Verify OTP"),
         content: TextField(
           controller: _otp,
           keyboardType: TextInputType.number,
-          decoration: const InputDecoration(hintText: "Enter OTP sent to email"),
+          decoration: const InputDecoration(hintText: "Enter 6-digit code"),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
@@ -62,23 +67,26 @@ class _SignUpPageState extends State<SignUpPage> {
   }
 
   Future<void> _verifyAndFinish() async {
-    // Send OTP to backend to confirm registration
     final response = await http.post(
       Uri.parse("${ApiConfig.baseUrl}/verify-otp"),
-      body: jsonEncode({"email": _email.text, "otp": _otp.text}),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({"email": _email.text.trim(), "otp": _otp.text.trim()}),
     );
 
     if (response.statusCode == 200) {
       Navigator.pop(context); // Close dialog
-      Navigator.pop(context); // Go back to login
+      Navigator.pop(context); // Go back to login screen
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Account verified! Please login.")));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Invalid OTP")));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Create Account")),
-      body: Padding(
+      appBar: AppBar(title: const Text("Sign Up")),
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(25.0),
         child: Column(
           children: [
@@ -91,12 +99,18 @@ class _SignUpPageState extends State<SignUpPage> {
             TextField(controller: _pass, obscureText: true, decoration: const InputDecoration(hintText: "Password", prefixIcon: Icon(Icons.lock))),
             const SizedBox(height: 30),
             _isLoading 
-              ? const CircularProgressIndicator()
+              ? const CircularProgressIndicator(color: Color(0xFF075E54))
               : SizedBox(
                   width: double.infinity,
                   height: 50,
                   child: ElevatedButton(onPressed: _requestOtp, child: const Text("SEND OTP")),
                 ),
+            const SizedBox(height: 15),
+            // THE "HAVE ACCOUNT" OPTION YOU ASKED FOR:
+            TextButton(
+              onPressed: () => Navigator.pop(context), 
+              child: const Text("Already have an account? Login", style: TextStyle(color: Color(0xFF075E54))),
+            ),
           ],
         ),
       ),
