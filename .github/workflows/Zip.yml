@@ -40,4 +40,4 @@ jobs:
           else
             git commit -m "Auto-unzip: $(date +'%Y-%m-%d %H:%M:%S')"
             git push
-          fi
+          fi 
