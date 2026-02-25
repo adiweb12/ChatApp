@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService extends ChangeNotifier {
-  static const String baseUrl = 'http://10.0.2.2:5000'; // Android emulator localhost
+  static const String baseUrl = 'https://onechatbackendultraproxysecurity.onrender.com'; // Android emulator localhost
   bool _isLoading = false;
   String? _error;
 
