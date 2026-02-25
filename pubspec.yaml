@@ -2,7 +2,7 @@ name: my_chat_app
 description: "A new Flutter project for Android testing."
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 2.0.0+1
 
 environment:
   sdk: ^3.10.4
