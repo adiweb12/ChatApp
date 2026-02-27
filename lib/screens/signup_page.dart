@@ -49,7 +49,7 @@ class _SignupPageState extends State<SignupPage> {
           children: [
             // Header Section
             Container(
-              height: 230,
+              height: 190,
               width: double.infinity,
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
