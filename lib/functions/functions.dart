@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:onechat/models/models.dart';
 import 'package:onechat/screens/editor_page.dart';
-import :'package:onechat/screens/login_page.dart';
+import 'package:onechat/screens/login_page.dart';
 
 //________LOGOUT___LOGIC______
 Future<void> logOutUser(BuildContext context) async{
