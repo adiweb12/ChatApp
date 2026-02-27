@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:onechat/models/models.dart';
-import 'package:onechat/screen/editor_page.dart';
+import 'package:onechat/screens/editor_page.dart';
 
 Future<bool> editMail({
   required String phonenumber,
