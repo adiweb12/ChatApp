@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:onechat/screens/home_screen.dart';
 import 'package:onechat/models/models.dart';
 import 'package:onechat/functions/functions.dart';
+import 'package:onechat/screens/signup_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -42,9 +43,9 @@ class _LoginPageState extends State<LoginPage> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Header Section
+            // Header Section - Matches Signup & Home
             Container(
-              height: 300,
+              height: 250,
               width: double.infinity,
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
@@ -67,6 +68,7 @@ class _LoginPageState extends State<LoginPage> {
                       color: Colors.white,
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
+                      fontFamily: 'Barrio', // Consistent branding
                       letterSpacing: 1.2,
                     ),
                   ),
@@ -90,6 +92,7 @@ class _LoginPageState extends State<LoginPage> {
                   // Email Field
                   TextField(
                     controller: emailController,
+                    keyboardType: TextInputType.emailAddress,
                     decoration: InputDecoration(
                       prefixIcon: const Icon(Icons.email_outlined),
                       labelText: 'Email Address',
@@ -137,6 +140,26 @@ class _LoginPageState extends State<LoginPage> {
                       child: const Text(
                         'AUTHENTICATE',
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Fixed Navigation Link
+                  Center(
+                    child: TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const SignupPage()),
+                        );
+                      },
+                      child: const Text(
+                        "Don't have an account? Signup here",
+                        style: TextStyle(
+                          color: Colors.green,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
