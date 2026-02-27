@@ -62,15 +62,15 @@ flutter_launcher_icons:
   ios: false
   image_path: "assets/images/logo/icon.png"
   # To add assets to your application, add an assets section, like this:
-  assets:
-    - assets/images/splash.png
+assets:
+  - assets/images/splash.png
   #   - images/a_dot_ham.jpeg
 
 
-  fonts:
-    - family: Barrio
-      fonts:
-        - asset: assets/fonts/Barrio-Regular.ttf
-    - family: FontDiner
-      fonts:
-        - asset: assets/fonts/FontdinerSwanky-Regular.ttf
+fonts:
+  - family: Barrio
+     fonts:
+       - asset: assets/fonts/Barrio-Regular.ttf
+   - family: FontDiner
+     fonts:
+      - asset: assets/fonts/FontdinerSwanky-Regular.ttf
