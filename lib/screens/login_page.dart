@@ -45,7 +45,7 @@ class _LoginPageState extends State<LoginPage> {
           children: [
             // Header Section - Matches Signup & Home
             Container(
-              height: 250,
+              height: 200,
               width: double.infinity,
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
