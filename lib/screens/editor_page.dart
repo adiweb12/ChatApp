@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:onechat/models/models.dart';
 import 'package:onechat/functions/functions.dart';
-import 'package:onechat/screen/login_page.dart';
+import 'package:onechat/screens/login_page.dart';
 
 Future<void> goLogin(BuildContext context, bool userChoice) async {
   if (userChoice) {
