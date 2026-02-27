@@ -127,7 +127,7 @@ Widget _buildHeader(String title) {
           style: const TextStyle(
             color: Colors.white,
             fontSize: 26,
-            fontFamily:FontDiner,
+            fontFamily:'FontDiner',
             fontWeight: FontWeight.bold,
             letterSpacing: 1.2,
           ),
