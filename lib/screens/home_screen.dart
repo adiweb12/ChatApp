@@ -26,88 +26,30 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        centerTitle: true,
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: const Text(
-          "OneChat",
-          style: TextStyle(
-            color: Colors.green,
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            fontFamily: 'FontDiner', 
-          ),
-        ),
-        actions: [
-          PopupMenuButton<String>(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(15),
-              side: const BorderSide(color: Colors.grey, width: 0.5),
-            ),
-            color: Colors.white,
-            elevation: 8,
-            icon: const Icon(Icons.more_vert, color: Colors.green),
-            onSelected: (value) {
-              dropDownLogic(value, context);
-            },
-            itemBuilder: (BuildContext context) {
-              return const [
-                PopupMenuItem<String>(
-                  value: 'editMail',
-                  child: ListTile(
-                    leading: Icon(Icons.email, color: Colors.green),
-                    title: Text('Edit Email'),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
-                PopupMenuItem<String>(
-                  value: 'editPass',
-                  child: ListTile(
-                    leading: Icon(Icons.lock, color: Colors.green),
-                    title: Text('Edit Password'),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
-                PopupMenuItem<String>(
-                  value: 'logOut',
-                  child: ListTile(
-                    leading: Icon(Icons.exit_to_app, color: Colors.red),
-                    title: Text('Logout'),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
-              ];
-            },
-          ),
-        ],
-      ),
-      body: Container(
-        width: double.infinity,
-        color: Colors.white,
-        child: Column(
-          children: [
-            // Using the custom header here instead of the AppBar title for a professional splash look
-            _buildHeader("Onechat"),
-            const Expanded(
-              child: Center(
-                child: Text(
-                  "Chat Section",
-                  style: TextStyle(fontSize: 18, color: Colors.grey),
-                ),
+      backgroundColor: Colors.white,
+      // AppBar removed to allow the green container to hit the top
+      body: Column(
+        children: [
+          // The green container now serves as the Header/AppBar
+          _buildHeader("OneChat", context),
+          const Expanded(
+            child: Center(
+              child: Text(
+                "Chat Section",
+                style: TextStyle(fontSize: 18, color: Colors.grey),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
-// Reusable Header function
-Widget _buildHeader(String title) {
+// Reusable Header function modified to include the Menu button
+Widget _buildHeader(String title, BuildContext context) {
   return Container(
-    height: 180,
+    height: 220, // Increased height slightly since it now covers the top area
     width: double.infinity,
     decoration: const BoxDecoration(
       gradient: LinearGradient(
@@ -117,22 +59,75 @@ Widget _buildHeader(String title) {
       ),
       borderRadius: BorderRadius.only(bottomLeft: Radius.circular(70)),
     ),
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const Icon(Icons.chat_bubble_outline, size: 50, color: Colors.white),
-        const SizedBox(height: 10),
-        Text(
-          title,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 26,
-            fontFamily:'FontDiner',
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
+    child: SafeArea( // Ensures content stays below the status bar (time/battery)
+      child: Stack(
+        children: [
+          // Centered Logo and Title
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.chat_bubble_outline, size: 50, color: Colors.white),
+                const SizedBox(height: 10),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 26,
+                    fontFamily: 'FontDiner',
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+          // Repositioned PopupMenuButton to the top right of the green area
+          Positioned(
+            right: 10,
+            top: 10,
+            child: PopupMenuButton<String>(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+              color: Colors.white,
+              elevation: 8,
+              icon: const Icon(Icons.more_vert, color: Colors.white),
+              onSelected: (value) {
+                dropDownLogic(value, context);
+              },
+              itemBuilder: (BuildContext context) {
+                return const [
+                  PopupMenuItem<String>(
+                    value: 'editMail',
+                    child: ListTile(
+                      leading: Icon(Icons.email, color: Colors.green),
+                      title: Text('Edit Email'),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                  PopupMenuItem<String>(
+                    value: 'editPass',
+                    child: ListTile(
+                      leading: Icon(Icons.lock, color: Colors.green),
+                      title: Text('Edit Password'),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                  PopupMenuItem<String>(
+                    value: 'logOut',
+                    child: ListTile(
+                      leading: Icon(Icons.exit_to_app, color: Colors.red),
+                      title: Text('Logout'),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                ];
+              },
+            ),
+          ),
+        ],
+      ),
     ),
   );
 }
