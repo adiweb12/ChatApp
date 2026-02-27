@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:onechat/screen/login_page.dart';
+import 'package:onechat/screens/login_page.dart';
 import 'package:onechat/themes/theme.dart';
 import 'package:onechat/models/models.dart';
 import 'package:onechat/functions/functions.dart';
