@@ -23,7 +23,7 @@ Future<bool> signupLogic({
     required List<UserDetails> allUsers
 }) async{
     try{
-        UserDetails newUser = Userdetails(
+        UserDetails newUser = UserDetails(
             id:DateTime.now().millisecondsSinceEpoch.toString(),
             userName:username,
             phoneNumber:phonenumber,
