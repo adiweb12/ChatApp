@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:onechat/models/models.dart';
 import 'package:onechat/screens/editor_page.dart';
-import 'package:onechat/screens/login_page.dart';
+import :'package:onechat/screens/login_page.dart';
 
+//________LOGOUT___LOGIC______
 Future<void> logOutUser(BuildContext context) async{
     isLoggedIn = false;
     Navigator.pushAndRemoveUntil(
@@ -12,6 +13,31 @@ Future<void> logOutUser(BuildContext context) async{
     );
 }
 
+//_________Signup___logic_____
+Future<bool> signupLogic({
+    required String username,
+    required String email,
+    required String phonenumber,
+    required String dob,
+    required String password,
+    required List<UserDetails> allUsers
+}) async{
+    try{
+        UserDetails newUser = Userdetails(
+            id:DateTime.now().millisecondsSinceEpoch.toString(),
+            userName:username,
+            phoneNumber:phonenumber,
+            email: email,
+      password: password,
+      dob: dob,
+      );
+      return true;
+    }catch(e){
+        return false;
+    }
+}
+
+//__________mail______edit____logic___
 Future<bool> editMail({
   required String phonenumber,
   required String newMail,
@@ -28,6 +54,7 @@ Future<bool> editMail({
   }
 }
 
+//________login_______logic_______
 Future<bool> loginLogic({
   required String email,
   required String password,
@@ -43,6 +70,7 @@ Future<bool> loginLogic({
   }
 }
 
+//______update__password____logic____
 Future<bool> updatePassword({
   required String email,
   required String newPassword,
@@ -59,6 +87,7 @@ Future<bool> updatePassword({
   }
 }
 
+//______dropDown_____logic___
 Future<void> dropDownLogic(String value, BuildContext context) async {
   switch (value) {
     case 'editMail':
