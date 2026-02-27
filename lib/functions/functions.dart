@@ -31,7 +31,7 @@ Future<bool> signupLogic({
       password: password,
       dob: dob,
       );
-        allUsers.add(newUser)
+        allUsers.add(newUser);
       return true;
     }catch(e){
         return false;
