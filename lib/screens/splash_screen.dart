@@ -25,7 +25,6 @@ class SplashScreen extends StatefulWidget {
 }
 
 class SplashScreenState extends State<SplashScreen> {
-
   @override
   void initState() {
     super.initState();
@@ -46,27 +45,45 @@ class SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.asset(
-              "assets/images/splash.png",
-              width: 150,
+      // Changed background to white
+      backgroundColor: Colors.white,
+      body: Stack(
+        children: [
+          // Centered Content
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min, // Keeps column tight around children
+              children: [
+                Image.asset(
+                  "assets/images/splash.png",
+                  width: 180, // Slightly larger for better presence
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  "OneChat",
+                  style: TextStyle(
+                    color: Colors.green, // Changed text to green
+                    fontSize: 35,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: "Barrio",
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 30),
-            const Text(
-              "OneChat",
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 30,
-                fontWeight: FontWeight.bold,
-                fontFamily: "Barrio",
+          ),
+          // Loading Indicator at the bottom
+          Positioned(
+            bottom: 50,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: CircularProgressIndicator(
+                color: Colors.green.shade700,
+                strokeWidth: 3,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
