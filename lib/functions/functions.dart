@@ -1,6 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:onechat/models/models.dart';
 import 'package:onechat/screens/editor_page.dart';
+import 'package:onechat/screens/login_page.dart';
+
+Future<void> logOutUser(BuildContext context) async{
+    isLoggedIn = false;
+    Navigator.pushAndRemoveUntil(
+    context,
+    MaterialPageRoute(builder: (context) => const LoginPage()),
+    (route) => false,
+    );
+}
 
 Future<bool> editMail({
   required String phonenumber,
@@ -62,6 +72,9 @@ Future<void> dropDownLogic(String value, BuildContext context) async {
         context,
         MaterialPageRoute(builder: (context) => const EditPassPage()),
       );
+      break;
+          case 'logOut':
+            logOutUser(context);
       break;
   }
 }
