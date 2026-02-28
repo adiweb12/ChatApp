@@ -17,7 +17,7 @@ Future<void> goLogin(BuildContext context, bool userChoice) async {
   } else {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text("Something went wrong..."),
+        content: Text("Something went wrong.... Check credentials.."),
         backgroundColor: Colors.redAccent,
       ),
     );
