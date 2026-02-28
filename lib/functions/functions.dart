@@ -50,6 +50,7 @@ Future<bool> editMail({
     currentUser!.email = newMail;
     return true;
     }
+      return false;
   } catch (e) {
     return false;
   }
@@ -84,6 +85,7 @@ Future<bool> updatePassword({
     currentUser!.password = newPassword;
     return true;
     }
+      return false;
   } catch (e) {
     return false;
   }
