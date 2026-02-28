@@ -5,6 +5,9 @@ import 'package:onechat/screens/login_page.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:onechat/constant/constants.dart';
+import 'package:onechat/database/operations/database_operation.dart';
+import 'package:onechat/database/database_manager.dart';
+
 
 //________LOGOUT___LOGIC______
 Future<void> logOutUser(BuildContext context) async{
@@ -41,8 +44,12 @@ Future<bool> signupLogic({
       password: password,
       dob: dob,
       );
-        allUsers.add(newUser);
+       // allUsers.add(newUser);
+      if(await insertUser(newUser)){
       return true;
+      }else{
+          return false;
+      }
     }catch(e){
         return false;
     }
@@ -79,16 +86,18 @@ Future<bool> loginLogic({
         return false;
     }else{
   try {
-    UserDetails foundUser = allUsers.firstWhere(
-      (user) => user.email == email && user.password == password,
-    );
-    currentUser = foundUser;
+  //  UserDetails foundUser = allUsers.firstWhere(
+      //(user) => user.email == email && user.password == password,
+      UserDetails? foundUser = await getUser(email, password);
+    if(foundUser != null){;
     //SharedPreferences
     final _sharedPref = await SharedPreferences.getInstance();
     await _sharedPref.setBool(SECRET_LOGIN_KEY,true);
     await _sharedPref.setString(User_Id,foundUser.id);
     //isLoggedIn = true;
     return true;
+    }
+    return false;
   } catch (e) {
     return false;
   }
@@ -149,7 +158,7 @@ Future<List<UserDetails>> getMatchedContacts(List<UserDetails> allUsers) async {
           String _userCleanNumber = user.phoneNumber.replaceAll(RegExp(r'\D'), '');
 
           if (_userCleanNumber == _cleanNumber) {
-            // Logic Fix: Use !matchedUsers.contains to avoid duplicates
+
             if (!matchedUsers.contains(user)) {
               matchedUsers.add(user);
             }
