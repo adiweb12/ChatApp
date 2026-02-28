@@ -4,7 +4,7 @@ import 'package:onechat/themes/theme.dart';
 import 'package:onechat/models/models.dart';
 import 'package:onechat/functions/functions.dart';
 import 'package:onechat/screens/bottom_bar.dart';
-import 'package:onechat/screens/add_chat_group.dart'
+import 'package:onechat/screens/add_chat_group.dart';
 
 class Starter extends StatelessWidget {
   const Starter({super.key});
