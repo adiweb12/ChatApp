@@ -84,8 +84,8 @@ Future<bool> loginLogic({
     );
     currentUser = foundUser;
     //SharedPreferences
-    final _sharedPref = await SharedPreferences.getInstance(),
-    await _sharedPref.setBool(UserLoginInfo,true);
+    final _sharedPref = await SharedPreferences.getInstance();
+    await _sharedPref.setBool(SECRET_LOGIN_KEY,true);
     await _sharedPref.setString(User_Id,foundUser.id);
     //isLoggedIn = true;
     return true;
