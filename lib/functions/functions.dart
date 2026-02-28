@@ -3,10 +3,14 @@ import 'package:onechat/models/models.dart';
 import 'package:onechat/screens/editor_page.dart';
 import 'package:onechat/screens/login_page.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:onechat/constant/constants.dart';
 
 //________LOGOUT___LOGIC______
 Future<void> logOutUser(BuildContext context) async{
-    isLoggedIn = false;
+    //isLoggedIn = false;
+    final _sharedPref = await SharedPreferences.getInstance();
+    await _sharedPref.clear();
     Navigator.pushAndRemoveUntil(
     context,
     MaterialPageRoute(builder: (context) => const LoginPage()),
@@ -23,6 +27,11 @@ Future<bool> signupLogic({
     required String password,
     required List<UserDetails> allUsers
 }) async{
+    if(username==null||username.isEmpty||email==null||email.isEmpty||phonenumber==null||phonenumber.isEmpty||dob==null||dob.isEmpty||password==null||password.isEmpty){
+        return false;
+    }else if(username.length<3||email.length<7||phonenumber.length<10||dob.length<7||password.length<4||){
+        return false;
+    }else{
     try{
         UserDetails newUser = UserDetails(
             id:DateTime.now().millisecondsSinceEpoch.toString(),
@@ -37,6 +46,8 @@ Future<bool> signupLogic({
     }catch(e){
         return false;
     }
+    }
+return false;
 }
 
 //__________mail______edit____logic___
@@ -62,16 +73,27 @@ Future<bool> loginLogic({
   required String password,
   required List<UserDetails> allUsers,
 }) async {
+    if(email==null||password==null){
+        return false;
+    }else if(email.length<=7 || password<5){
+        return false;
+    }else{
   try {
     UserDetails foundUser = allUsers.firstWhere(
       (user) => user.email == email && user.password == password,
     );
     currentUser = foundUser;
-    isLoggedIn = true;
+    //SharedPreferences
+    final _sharedPref = await SharedPreferences.getInstance(),
+    await _sharedPref.setBool(UserLoginInfo,true);
+    await _sharedPref.setString(User_Id,foundUser.id)
+    //isLoggedIn = true;
     return true;
   } catch (e) {
     return false;
   }
+    }
+    return false;
 }
 
 //______update__password____logic____
