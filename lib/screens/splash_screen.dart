@@ -4,6 +4,7 @@ import 'package:onechat/themes/theme.dart';
 import 'package:onechat/screens/home_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:onechat/constant/constants.dart';
+import 'package:onechat/models/models.dart';
 
 class Welcome extends StatelessWidget {
   const Welcome({super.key});
