@@ -4,6 +4,7 @@ import 'package:onechat/themes/theme.dart';
 import 'package:onechat/models/models.dart';
 import 'package:onechat/functions/functions.dart';
 import 'package:onechat/screens/bottom_bar.dart';
+import 'package:onechat/screens/add_chat_group.dart'
 
 class Starter extends StatelessWidget {
   const Starter({super.key});
@@ -83,15 +84,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
               child: IconButton(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("Feature Coming Soon!"),
-                      behavior: SnackBarBehavior.floating,
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                },
+                onPressed: () { Navigator.pushReplacement(context,MaterialPageRoute(builder: (context) => const AddChatGroupPage()),
+  ); // Close function call
+}, // Close onPressed
+
                 icon: const Icon(Icons.add, color: Colors.white, size: 30),
               ),
             ),
