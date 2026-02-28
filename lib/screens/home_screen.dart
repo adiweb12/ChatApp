@@ -49,7 +49,7 @@ class HomeScreen extends StatelessWidget {
 // Reusable Header function modified to include the Menu button
 Widget _buildHeader(String title, BuildContext context) {
   return Container(
-    height: 180, // Increased height slightly since it now covers the top area
+    height: 150, // Increased height slightly since it now covers the top area
     width: double.infinity,
     decoration: const BoxDecoration(
       gradient: LinearGradient(
@@ -57,7 +57,7 @@ Widget _buildHeader(String title, BuildContext context) {
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
       ),
-      borderRadius: BorderRadius.only(bottomLeft: Radius.circular(70)),
+      borderRadius: BorderRadius.only(bottomLeft: Radius.circular(0.1)),
     ),
     child: SafeArea( // Ensures content stays below the status bar (time/battery)
       child: Stack(
