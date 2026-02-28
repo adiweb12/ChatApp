@@ -75,7 +75,7 @@ Future<bool> loginLogic({
 }) async {
     if(email==null||password==null){
         return false;
-    }else if(email.length<=7 || password<5){
+    }else if(email.length<=7 || password.length<5){
         return false;
     }else{
   try {
