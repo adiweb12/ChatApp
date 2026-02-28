@@ -22,3 +22,4 @@ List<UserDetails> globalUserList = [
 ];
 
 bool isLoggedIn = false; 
+UserDetails? currentUser;
