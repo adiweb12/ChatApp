@@ -45,11 +45,10 @@ Future<bool> editMail({
   required List<UserDetails> allUsers,
 }) async {
   try {
-    UserDetails userToEdit = allUsers.firstWhere(
-      (user) => user.phoneNumber == phonenumber,
-    );
-    userToEdit.email = newMail;
+    if(currentUser !=null && currentUser!.phoneNumber == phonenumber){
+    currentUser!.email = newMail;
     return true;
+    }
   } catch (e) {
     return false;
   }
@@ -62,9 +61,11 @@ Future<bool> loginLogic({
   required List<UserDetails> allUsers,
 }) async {
   try {
-    allUsers.firstWhere(
+    UserDetails foundUser = allUsers.firstWhere(
       (user) => user.email == email && user.password == password,
     );
+    currentUser = foundUser;
+    isLoggedIn = true;
     return true;
   } catch (e) {
     return false;
@@ -78,11 +79,10 @@ Future<bool> updatePassword({
   required List<UserDetails> allUsers,
 }) async {
   try {
-    UserDetails userToEdit = allUsers.firstWhere(
-      (user) => user.email == email,
-    );
-    userToEdit.password = newPassword;
+    if(currentUser != null && currentUser!.email==email){
+    currentUser!.password = newPassword;
     return true;
+    }
   } catch (e) {
     return false;
   }
