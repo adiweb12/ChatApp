@@ -1,173 +1,114 @@
 import 'package:flutter/material.dart';
-import 'package:onechat/models/models.dart';
-import 'package:onechat/screens/editor_page.dart';
 import 'package:onechat/screens/login_page.dart';
-import 'package:flutter_contacts/flutter_contacts.dart';
+import 'package:onechat/themes/theme.dart';
+import 'package:onechat/screens/home_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:onechat/constant/constants.dart';
+import 'package:onechat/models/models.dart';
 import 'package:onechat/database/operations/database_operation.dart';
 import 'package:onechat/database/database_manager.dart';
 
 
-//________LOGOUT___LOGIC______
-Future<void> logOutUser(BuildContext context) async{
-    //isLoggedIn = false;
-    final _sharedPref = await SharedPreferences.getInstance();
-    await _sharedPref.clear();
-    Navigator.pushAndRemoveUntil(
-    context,
-    MaterialPageRoute(builder: (context) => const LoginPage()),
-    (route) => false,
+
+class Welcome extends StatelessWidget {
+  const Welcome({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.mainTheme,
+      home: const SplashScreen(),
     );
+  }
 }
 
-//_________Signup___logic_____
-Future<bool> signupLogic({
-    required String username,
-    required String email,
-    required String phonenumber,
-    required String dob,
-    required String password,
-    required List<UserDetails> allUsers
-}) async{
-    if(username==null||username.isEmpty||email==null||email.isEmpty||phonenumber==null||phonenumber.isEmpty||dob==null||dob.isEmpty||password==null||password.isEmpty){
-        return false;
-    }else if(username.length<3||email.length<7||phonenumber.length<10||dob.length<7||password.length<4){
-        return false;
-    }else{
-    try{
-        UserDetails newUser = UserDetails(
-            id:DateTime.now().millisecondsSinceEpoch.toString(),
-            userName:username,
-            phoneNumber:phonenumber,
-            email: email,
-      password: password,
-      dob: dob,
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => SplashScreenState();
+}
+
+class SplashScreenState extends State<SplashScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _navigateToNext();
+  }
+
+  void _navigateToNext() async {
+    await Future.delayed(const Duration(seconds: 4));
+    if (!mounted) return;
+    // We call the logic and let it handle navigation
+    await checkLoginStatus(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Stack(
+        children: [
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Image.asset("assets/images/splash.png", width: 180),
+                const SizedBox(height: 20),
+                const Text(
+                  "OneChat",
+                  style: TextStyle(
+                    color: Colors.green,
+                    fontSize: 35,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Positioned(
+            bottom: 50, left: 0, right: 0,
+            child: Center(child: CircularProgressIndicator(color: Colors.green)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+Future<void> checkLoginStatus(BuildContext context) async {
+  final sharedPref = await SharedPreferences.getInstance();
+  final isLoggedIn = sharedPref.getBool(SECRET_LOGIN_KEY) ?? false;
+  final savedId = sharedPref.getString(User_Id);
+
+  if (isLoggedIn && savedId != null) {
+    final dbClient = await dbMaker.db; // Use dbMaker instance
+    List<Map<String, dynamic>> maps = await dbClient.query(
+      "UserData", // Match the table name 'UserData'
+      where: "id = ?",
+      whereArgs: [savedId],
+    );
+
+    if (maps.isNotEmpty) {
+      currentUser = UserDetails(
+        id: maps[0]['id'],
+        userName: maps[0]['userName'],
+        email: maps[0]['email'],
+        phoneNumber: maps[0]['phoneNumber'],
+        password: maps[0]['password'],
+        dob: maps[0]['dob'],
       );
-       // allUsers.add(newUser);
-      if(await insertUser(newUser)){
-      return true;
-      }else{
-          return false;
-      }
-    }catch(e){
-        return false;
     }
-    }
-return false;
-}
-
-//__________mail______edit____logic___
-Future<bool> editMail({
-  required String phonenumber,
-  required String newMail,
-  required List<UserDetails> allUsers,
-}) async {
-  try {
-    if(currentUser !=null && currentUser!.phoneNumber == phonenumber){
-    currentUser!.email = newMail;
-    return true;
-    }
-      return false;
-  } catch (e) {
-    return false;
   }
-}
 
-//________login_______logic_______
-Future<bool> loginLogic({
-  required String email,
-  required String password,
-  required List<UserDetails> allUsers,
-}) async {
-    if(email==null||password==null){
-        return false;
-    }else if(email.length<=7 || password.length<5){
-        return false;
-    }else{
-  try {
-  //  UserDetails foundUser = allUsers.firstWhere(
-      //(user) => user.email == email && user.password == password,
-      UserDetails? foundUser = await getUser(email, password);
-    if(foundUser != null){;
-    //SharedPreferences
-    final _sharedPref = await SharedPreferences.getInstance();
-    await _sharedPref.setBool(SECRET_LOGIN_KEY,true);
-    await _sharedPref.setString(User_Id,foundUser.id);
-    //isLoggedIn = true;
-    return true;
-    }
-    return false;
-  } catch (e) {
-    return false;
-  }
-    }
-    return false;
-}
-
-//______update__password____logic____
-Future<bool> updatePassword({
-  required String email,
-  required String newPassword,
-  required List<UserDetails> allUsers,
-}) async {
-  try {
-    if(currentUser != null && currentUser!.email==email){
-    currentUser!.password = newPassword;
-    return true;
-    }
-      return false;
-  } catch (e) {
-    return false;
-  }
-}
-
-//______dropDown_____logic___
-Future<void> dropDownLogic(String value, BuildContext context) async {
-  switch (value) {
-    case 'editMail':
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const EditMailPage()),
-      );
-      break;
-    case 'editPass':
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const EditPassPage()),
-      );
-      break;
-          case 'logOut':
-            logOutUser(context);
-      break;
-  }
-}
-
-//________Contact_____loading______logic
-Future<List<UserDetails>> getMatchedContacts(List<UserDetails> allUsers) async {
-  if (await FlutterContacts.requestPermission()) {
-    // Fixed: 'Contact' type (not Contacts)
-    List<Contact> _phoneContacts = await FlutterContacts.getContacts(withProperties: true);
-    List<UserDetails> matchedUsers = [];
-
-    for (var contact in _phoneContacts) { // Fixed: plural s
-      for (var phone in contact.phones) {
-        String _cleanNumber = phone.number.replaceAll(RegExp(r'\D'), '');
-
-        for (var user in allUsers) {
-          String _userCleanNumber = user.phoneNumber.replaceAll(RegExp(r'\D'), '');
-
-          if (_userCleanNumber == _cleanNumber) {
-
-            if (!matchedUsers.contains(user)) {
-              matchedUsers.add(user);
-            }
-          }
-        }
-      }
-    }
-    return matchedUsers;
-  } else {
-    return [];
-  }
+  if (!context.mounted) return;
+  Navigator.pushReplacement(
+    context,
+    MaterialPageRoute(
+      builder: (context) => (isLoggedIn && currentUser != null)
+          ? const HomeScreen()
+          : const LoginPage(),
+    ),
+  );
 }
