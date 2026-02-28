@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:onechat/screens/login_page.dart';
 import 'package:onechat/themes/theme.dart';
-import 'package:onechat/models/models.dart';
 import 'package:onechat/screens/home_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:onechat/constant/constants.dart';
 
 class Welcome extends StatelessWidget {
   const Welcome({super.key});
@@ -28,63 +29,71 @@ class SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
+    _navigateToNext();
+  }
 
-    Future.delayed(const Duration(seconds: 4), () {
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) =>
-                isLoggedIn ? const HomeScreen() : const LoginPage(),
-          ),
-        );
-      }
-    });
+  void _navigateToNext() async {
+    await Future.delayed(const Duration(seconds: 4));
+    if (!mounted) return;
+    // We call the logic and let it handle navigation
+    await checkLoginStatus(context);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Changed background to white
       backgroundColor: Colors.white,
       body: Stack(
         children: [
-          // Centered Content
           Center(
             child: Column(
-              mainAxisSize: MainAxisSize.min, // Keeps column tight around children
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Image.asset(
-                  "assets/images/splash.png",
-                  width: 180, // Slightly larger for better presence
-                ),
+                Image.asset("assets/images/splash.png", width: 180),
                 const SizedBox(height: 20),
                 const Text(
                   "OneChat",
                   style: TextStyle(
-                    color: Colors.green, // Changed text to green
+                    color: Colors.green,
                     fontSize: 35,
                     fontWeight: FontWeight.bold,
-                    fontFamily: "Barrio",
                   ),
                 ),
               ],
             ),
           ),
-          // Loading Indicator at the bottom
-          Positioned(
-            bottom: 50,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: CircularProgressIndicator(
-                color: Colors.green.shade700,
-                strokeWidth: 3,
-              ),
-            ),
+          const Positioned(
+            bottom: 50, left: 0, right: 0,
+            child: Center(child: CircularProgressIndicator(color: Colors.green)),
           ),
         ],
       ),
     );
   }
+}
+
+Future<void> checkLoginStatus(BuildContext context) async {
+  final sharedPref = await SharedPreferences.getInstance();
+  final isLoggedIn = sharedPref.getBool(SECRET_LOGIN_KEY) ?? false;
+  final savedId = sharedPref.getString(User_Id);
+
+  if (isLoggedIn && savedId != null) {
+    try {
+      // Restore the currentUser object from your global list using the saved ID
+      currentUser = globalUserList.firstWhere((u) => u.id == savedId);
+    } catch (e) {
+      // If user not found in list, force login
+    }
+  }
+
+  if (!context.mounted) return;
+
+  Navigator.pushReplacement(
+    context,
+    MaterialPageRoute(
+      builder: (context) => (isLoggedIn && currentUser != null) 
+          ? const HomeScreen() 
+          : const LoginPage(),
+    ),
+  );
 }
