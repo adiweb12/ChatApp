@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:onechat/models/models.dart';
 import 'package:onechat/screens/editor_page.dart';
 import 'package:onechat/screens/login_page.dart';
+import 'package:flutter_contacts/flutter_contacts.dart';
 
 //________LOGOUT___LOGIC______
 Future<void> logOutUser(BuildContext context) async{
@@ -49,7 +50,6 @@ Future<bool> editMail({
     currentUser!.email = newMail;
     return true;
     }
-      return false;
   } catch (e) {
     return false;
   }
@@ -84,7 +84,6 @@ Future<bool> updatePassword({
     currentUser!.password = newPassword;
     return true;
     }
-      return false;
   } catch (e) {
     return false;
   }
@@ -108,5 +107,34 @@ Future<void> dropDownLogic(String value, BuildContext context) async {
           case 'logOut':
             logOutUser(context);
       break;
+  }
+}
+
+//________Contact_____loading______logic
+Future<List<UserDetails>> getMatchedContacts(List<UserDetails> allUsers) async {
+  if (await FlutterContacts.requestPermission()) {
+    // Fixed: 'Contact' type (not Contacts)
+    List<Contact> _phoneContacts = await FlutterContacts.getContacts(withProperties: true);
+    List<UserDetails> matchedUsers = [];
+
+    for (var contact in _phoneContacts) { // Fixed: plural s
+      for (var phone in contact.phones) {
+        String _cleanNumber = phone.number.replaceAll(RegExp(r'\D'), '');
+
+        for (var user in allUsers) {
+          String _userCleanNumber = user.phoneNumber.replaceAll(RegExp(r'\D'), '');
+
+          if (_userCleanNumber == _cleanNumber) {
+            // Logic Fix: Use !matchedUsers.contains to avoid duplicates
+            if (!matchedUsers.contains(user)) {
+              matchedUsers.add(user);
+            }
+          }
+        }
+      }
+    }
+    return matchedUsers;
+  } else {
+    return [];
   }
 }
