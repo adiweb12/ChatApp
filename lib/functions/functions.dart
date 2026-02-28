@@ -29,7 +29,7 @@ Future<bool> signupLogic({
 }) async{
     if(username==null||username.isEmpty||email==null||email.isEmpty||phonenumber==null||phonenumber.isEmpty||dob==null||dob.isEmpty||password==null||password.isEmpty){
         return false;
-    }else if(username.length<3||email.length<7||phonenumber.length<10||dob.length<7||password.length<4||){
+    }else if(username.length<3||email.length<7||phonenumber.length<10||dob.length<7||password.length<4){
         return false;
     }else{
     try{
