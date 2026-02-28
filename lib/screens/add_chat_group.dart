@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:onechat/functions/functions.dart';
 import 'package:onechat/models/models.dart';
-import 'package:onechat/screens/starter.dart'; // Import where your HomeScreen/Starter is
+import 'package:onechat/screens/home_screen.dart'; // Import where your HomeScreen/Starter is
 
 class AddChatGroupPage extends StatefulWidget {
   const AddChatGroupPage({super.key});
