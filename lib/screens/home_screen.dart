@@ -3,12 +3,14 @@ import 'package:onechat/screens/login_page.dart';
 import 'package:onechat/themes/theme.dart';
 import 'package:onechat/models/models.dart';
 import 'package:onechat/functions/functions.dart';
+import 'package:onechat/screens/bottom_bar.dart';
 
 class Starter extends StatelessWidget {
   const Starter({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Ensuring the login state is checked directly from the global variable
     bool logData = isLoggedIn; 
 
     return MaterialApp(
@@ -20,36 +22,92 @@ class Starter extends StatelessWidget {
   }
 }
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      // AppBar removed to allow the green container to hit the top
-      body: Column(
+      // Stack allows us to place the Floating "Add" button precisely
+      body: Stack(
         children: [
-          // The green container now serves as the Header/AppBar
-          _buildHeader("OneChat", context),
-          const Expanded(
-            child: Center(
-              child: Text(
-                "Chat Section",
-                style: TextStyle(fontSize: 18, color: Colors.grey),
+          Column(
+            children: [
+              // Custom Green Header
+              _buildHeader("OneChat", context),
+              
+              // Main Content Area
+              const Expanded(
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.chat_bubble_outline, size: 100, color: Colors.grey),
+                      SizedBox(height: 20),
+                      Text(
+                        "No Conversations Yet",
+                        style: TextStyle(fontSize: 18, color: Colors.grey, fontWeight: FontWeight.w500),
+                      ),
+                      Text(
+                        "Tap the + button to start chatting",
+                        style: TextStyle(fontSize: 14, color: Colors.black45),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          // Custom "Coming Soon" Button (The IconButton logic you wanted)
+          Positioned(
+            bottom: 30,
+            right: 30,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.green,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.3),
+                    spreadRadius: 2,
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: IconButton(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Feature Coming Soon!"),
+                      behavior: SnackBarBehavior.floating,
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.add, color: Colors.white, size: 30),
               ),
             ),
           ),
         ],
       ),
+      // Integrating your Bottom Bar widget
+      bottomNavigationBar: const BottomNavigationWidget(),
     );
   }
 }
 
-// Reusable Header function modified to include the Menu button
+// Reusable Header function
 Widget _buildHeader(String title, BuildContext context) {
   return Container(
-    height: 150, // Increased height slightly since it now covers the top area
+    height: 180,
     width: double.infinity,
     decoration: const BoxDecoration(
       gradient: LinearGradient(
@@ -57,12 +115,14 @@ Widget _buildHeader(String title, BuildContext context) {
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
       ),
-      borderRadius: BorderRadius.only(bottomLeft: Radius.circular(0.1)),
+      borderRadius: BorderRadius.only(
+        bottomLeft: Radius.circular(30),
+        bottomRight: Radius.circular(30),
+      ),
     ),
-    child: SafeArea( // Ensures content stays below the status bar (time/battery)
+    child: SafeArea(
       child: Stack(
         children: [
-          // Centered Logo and Title
           Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -73,8 +133,7 @@ Widget _buildHeader(String title, BuildContext context) {
                   title,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 26,
-                    fontFamily: 'FontDiner',
+                    fontSize: 28,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1.2,
                   ),
@@ -82,48 +141,38 @@ Widget _buildHeader(String title, BuildContext context) {
               ],
             ),
           ),
-          // Repositioned PopupMenuButton to the top right of the green area
           Positioned(
-            right: 10,
-            top: 10,
+            right: 15,
+            top: 15,
             child: PopupMenuButton<String>(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(15),
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
               color: Colors.white,
-              elevation: 8,
-              icon: const Icon(Icons.more_vert, color: Colors.white),
-              onSelected: (value) {
-                dropDownLogic(value, context);
-              },
-              itemBuilder: (BuildContext context) {
-                return const [
-                  PopupMenuItem<String>(
-                    value: 'editMail',
-                    child: ListTile(
-                      leading: Icon(Icons.email, color: Colors.green),
-                      title: Text('Edit Email'),
-                      contentPadding: EdgeInsets.zero,
-                    ),
+              elevation: 10,
+              icon: const Icon(Icons.more_vert, color: Colors.white, size: 30),
+              onSelected: (value) => dropDownLogic(value, context),
+              itemBuilder: (context) => const [
+                PopupMenuItem(
+                  value: 'editMail',
+                  child: ListTile(
+                    leading: Icon(Icons.email, color: Colors.green),
+                    title: Text('Edit Email'),
                   ),
-                  PopupMenuItem<String>(
-                    value: 'editPass',
-                    child: ListTile(
-                      leading: Icon(Icons.lock, color: Colors.green),
-                      title: Text('Edit Password'),
-                      contentPadding: EdgeInsets.zero,
-                    ),
+                ),
+                PopupMenuItem(
+                  value: 'editPass',
+                  child: ListTile(
+                    leading: Icon(Icons.lock, color: Colors.green),
+                    title: Text('Edit Password'),
                   ),
-                  PopupMenuItem<String>(
-                    value: 'logOut',
-                    child: ListTile(
-                      leading: Icon(Icons.exit_to_app, color: Colors.red),
-                      title: Text('Logout'),
-                      contentPadding: EdgeInsets.zero,
-                    ),
+                ),
+                PopupMenuItem(
+                  value: 'logOut',
+                  child: ListTile(
+                    leading: Icon(Icons.exit_to_app, color: Colors.red),
+                    title: Text('Logout'),
                   ),
-                ];
-              },
+                ),
+              ],
             ),
           ),
         ],
