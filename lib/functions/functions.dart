@@ -7,6 +7,9 @@ import 'package:onechat/constant/constants.dart';
 import 'package:onechat/database/operations/database_operation.dart';
 import 'package:onechat/database/database_manager.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:onechat/backend/api_services.dart';
+import 'package:dio/dio.dart';
+import 'package:constant/api_urls.dart';
 
 
 //________LOGOUT___LOGIC______
@@ -29,31 +32,33 @@ Future<bool> signupLogic({
     required String password,
     required List<UserDetails> allUsers
 }) async{
-    if(username==null||username.isEmpty||email==null||email.isEmpty||phonenumber==null||phonenumber.isEmpty||dob==null||dob.isEmpty||password==null||password.isEmpty){
-        return false;
-    }else if(username.length<3||email.length<7||phonenumber.length<10||dob.length<7||password.length<4){
-        return false;
-    }else{
-    try{
-        UserDetails newUser = UserDetails(
-            id:DateTime.now().millisecondsSinceEpoch.toString(),
-            userName:username,
-            phoneNumber:phonenumber,
-            email: email,
-      password: password,
-      dob: dob,
+    try {
+    // 1. SERVER SIGNUP
+    final response = await api.client.post("$signupBaseUrl", data: {
+      "userName": username,
+      "email": email,
+      "phoneNumber": phonenumber,
+      "dob": dob,
+      "password": password,
+    });
+
+    if (response.statusCode == 201) {
+      // 2. STORE LOCALLY SO USER CAN LOGIN OFFLINE LATER
+      UserDetails newUser = UserDetails(
+        id: DateTime.now().millisecondsSinceEpoch.toString(), // Temp ID until login
+        userName: username,
+        email: email,
+        phoneNumber: phonenumber,
+        password: password,
+        dob: dob,
       );
-       // allUsers.add(newUser);
-      if(await insertUser(newUser)){
+      await insertUser(newUser);
       return true;
-      }else{
-          return false;
-      }
-    }catch(e){
-        return false;
     }
-    }
-return false;
+  } catch (e) {
+    return false;
+  }
+  return false;
 }
 
 //__________mail______edit____logic___
@@ -68,7 +73,8 @@ Future<bool> editMail({
     
     if (isUpdated) {
       // Clear preferences so user has to log in again with new mail
-      await storage.deleteAll();
+      final _sharedPref = await SharedPreferences.getInstance();
+      await _sharedPref.clear();
       return true;
     }
     return false;
@@ -79,35 +85,48 @@ Future<bool> editMail({
 
 
 //________login_______logic_______
+//________login_______logic_______
 Future<bool> loginLogic({
   required String email,
   required String password,
   required List<UserDetails> allUsers,
 }) async {
-    if(email==null||password==null){
-        return false;
-    }else if(email.length<=7 || password.length<5){
-        return false;
-    }else{
   try {
-  //  UserDetails foundUser = allUsers.firstWhere(
-      //(user) => user.email == email && user.password == password,
-      UserDetails? foundUser = await getUser(email, password);
-    if(foundUser != null){;
-    //flutter_secure_storage
-    await storage.write(key: SECRET_LOGIN_KEY,value: 'true');
-    await storage.write(key: User_Id,value: foundUser.id);
-    
-    return true;
-    }
-    return false;
-  } catch (e) {
-    return false;
-  }
-    }
-    return false;
-}
+    final response = await api.client.post(loginBaseUrl, data: {
+      "email": email,
+      "password": password,
+    });
 
+    if (response.statusCode == 200) {
+      final data = response.data; // Added this
+      final userData = data["user"]; // Added this
+
+      await storage.write(key: "access_token", value: data["access_token"]);
+      await storage.write(key: "refresh_token", value: data["refresh_token"]);
+      await storage.write(key: SECRET_LOGIN_KEY, value: 'true');
+      await storage.write(key: User_Id, value: userData["id"].toString());
+
+      UserDetails userToSync = UserDetails(
+        id: userData["id"].toString(),
+        userName: userData["userName"],
+        email: userData["email"],
+        phoneNumber: userData["phoneNumber"] ?? "0000000000",
+        password: password,
+        dob: userData["dob"] ?? "Not Provided",
+      );
+
+      await insertUser(userToSync);
+      currentUser = userToSync;
+      return true;
+    }
+  } on DioException catch (e) { // Fixed parenthesis error
+    if (e.type == DioExceptionType.connectionError || e.type == DioExceptionType.connectionTimeout) {
+        return false;
+      }
+    }
+  }
+  return false;
+}
 //______update__password____logic____
 Future<bool> updatePassword({
   required String email,
@@ -118,7 +137,8 @@ Future<bool> updatePassword({
     bool isUpdated = await updatePassDataBase(email, newPassword);
     
     if (isUpdated) {
-      await storage.deleteAll();
+      final _sharedPref = await SharedPreferences.getInstance();
+      await _sharedPref.clear();
       return true;
     }
     return false;
