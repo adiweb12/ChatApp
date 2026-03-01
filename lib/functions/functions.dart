@@ -65,23 +65,39 @@ Future<String?> signupLogic({
 }
 
 //__________mail______edit____logic___
-Future<bool> editMail({
+Future<String?> editMail({
   required String phonenumber,
   required String newMail,
   required List<UserDetails> allUsers,
 }) async {
   try {
-    bool isUpdated = await updateEmailDataBase(phonenumber, newMail);
-    if (isUpdated) {
-      await storage.deleteAll();
-      return true;
-    }
-    return false;
-  } catch (e) {
-    return false;
-  }
-}
+    // 1. UPDATE SERVER
+    final response = await api.client.put(updateEmailUrl, data: {
+      "phoneNumber": phonenumber,
+      "newEmail": newMail,
+    });
 
+    if (response.statusCode == 200) {
+      // 2. UPDATE LOCAL SQLITE
+      bool localSuccess = await updateEmailDataBase(phonenumber, newMail);
+      
+      if (localSuccess) {
+        // Optional: Update global currentUser object so the UI reflects changes immediately
+        if (currentUser != null) currentUser!.email = newMail;
+        
+             await storage.deleteAll(); 
+        
+        return null;
+      }
+    }
+  } on DioException catch (e) {
+    return "Server Email Update Failed: ${e.response?.data['error']}";
+
+  } catch (e) {
+    return "Local Sync Error: $e";
+  }
+  return "Error";
+}
 //________login_______logic_______
 Future<String?> loginLogic({
   required String email,
@@ -129,23 +145,35 @@ Future<String?> loginLogic({
 }
 
 //______update__password____logic____
-Future<bool> updatePassword({
+Future<String?> updatePassword({
   required String email,
   required String newPassword,
   required List<UserDetails> allUsers,
 }) async {
   try {
-    bool isUpdated = await updatePassDataBase(email, newPassword);
-    if (isUpdated) {
-      await storage.deleteAll();
-      return true;
-    }
-    return false;
-  } catch (e) {
-    return false;
-  }
-}
+    // 1. UPDATE SERVER
+    final response = await api.client.put(updatePasswordUrl, data: {
+      "email": email,
+      "newPassword": newPassword,
+    });
 
+    if (response.statusCode == 200) {
+      // 2. UPDATE LOCAL SQLITE
+      bool localSuccess = await updatePassDataBase(email, newPassword);
+      
+      if (localSuccess) {
+        // Since password changed, it's safer to clear session and make them re-login
+        await storage.deleteAll(); 
+        return null;
+      }
+    }
+  } on DioException catch (e) {
+     return "Server Password Update Failed: ${e.response?.data['error']}";
+  } catch (e) {
+     return "Local Sync Error: $e";
+  }
+  return "Error";
+}
 //______dropDown_____logic___
 Future<void> dropDownLogic(String value, BuildContext context) async {
   switch (value) {
