@@ -16,43 +16,37 @@ class _LoginPageState extends State<LoginPage> {
   final passwordController = TextEditingController();
   bool _isPasswordVisible = false;
 
-  // Inside _LoginPageState
-
-Future<void> _handleLogin() async {
-  // Show a loading indicator if you want
-  String? errorMessage = await loginLogic(
-    email: emailController.text.trim(),
-    password: passwordController.text.trim(),
-    allUsers: globalUserList,
-  );
-
-  if (errorMessage == null) {
-    // Success
-    isLoggedIn = true;
-    if (!mounted) return;
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => const HomeScreen()),
-      (route) => false,
+  Future<void> _handleLogin() async {
+    // Call the updated logic that returns a String?
+    String? errorMessage = await loginLogic(
+      email: emailController.text.trim(),
+      password: passwordController.text.trim(),
+      allUsers: globalUserList,
     );
-  } else {
-    // Show the actual message from the server
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(errorMessage), // Displaying server message here
-        backgroundColor: Colors.redAccent,
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.all(20),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    );
+
+    if (errorMessage == null) {
+      // Success case
+      isLoggedIn = true;
+      if (!mounted) return;
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
+        (route) => false,
+      );
+    } else {
+      // Failure case: Show the message from the server
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMessage),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(20),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+    }
   }
-}
-
-// ... inside your build method, update the ElevatedButton:
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -61,7 +55,6 @@ Future<void> _handleLogin() async {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Header Section - Matches Signup & Home
             Container(
               height: 200,
               width: double.infinity,
@@ -86,15 +79,13 @@ Future<void> _handleLogin() async {
                       color: Colors.white,
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
-                      fontFamily: 'Barrio', // Consistent branding
+                      fontFamily: 'Barrio',
                       letterSpacing: 1.2,
                     ),
                   ),
                 ],
               ),
             ),
-
-            // Form Section
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 40),
               child: Column(
@@ -106,8 +97,6 @@ Future<void> _handleLogin() async {
                   ),
                   const Text("Sign in to continue", style: TextStyle(color: Colors.grey)),
                   const SizedBox(height: 40),
-
-                  // Email Field
                   TextField(
                     controller: emailController,
                     keyboardType: TextInputType.emailAddress,
@@ -119,8 +108,6 @@ Future<void> _handleLogin() async {
                     ),
                   ),
                   const SizedBox(height: 20),
-
-                  // Password Field
                   TextField(
                     controller: passwordController,
                     obscureText: !_isPasswordVisible,
@@ -135,8 +122,6 @@ Future<void> _handleLogin() async {
                     ),
                   ),
                   const SizedBox(height: 40),
-
-                  // Login Button
                   SizedBox(
                     width: double.infinity,
                     height: 55,
@@ -147,8 +132,9 @@ Future<void> _handleLogin() async {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         elevation: 2,
                       ),
-                      onPressed: () async {
-                        await _handleLogin,
+                      onPressed: () {
+                        // FIX: Correctly call the function
+                        _handleLogin();
                       },
                       child: const Text(
                         'AUTHENTICATE',
@@ -157,8 +143,6 @@ Future<void> _handleLogin() async {
                     ),
                   ),
                   const SizedBox(height: 20),
-
-                  // Fixed Navigation Link
                   Center(
                     child: TextButton(
                       onPressed: () {
