@@ -7,6 +7,7 @@ import 'package:onechat/constant/constants.dart';
 import 'package:onechat/models/models.dart';
 import 'package:onechat/database/operations/database_operation.dart';
 import 'package:onechat/database/database_manager.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 
 
@@ -40,7 +41,6 @@ class SplashScreenState extends State<SplashScreen> {
   void _navigateToNext() async {
     await Future.delayed(const Duration(seconds: 4));
     if (!mounted) return;
-    // We call the logic and let it handle navigation
     await checkLoginStatus(context);
   }
 
@@ -78,14 +78,16 @@ class SplashScreenState extends State<SplashScreen> {
 }
 
 Future<void> checkLoginStatus(BuildContext context) async {
-  final sharedPref = await SharedPreferences.getInstance();
-  final isLoggedIn = sharedPref.getBool(SECRET_LOGIN_KEY) ?? false;
-  final savedId = sharedPref.getString(User_Id);
+    
+   String? loginStatus = await storage.read(key: SECRET_LOGIN_KEY);
+   String? savedId = await storage.read(key: User_Id);
+   
+   bool isLoggedIn = loginStatus == 'true';
 
   if (isLoggedIn && savedId != null) {
-    final dbClient = await dbMaker.db; // Use dbMaker instance
+    final dbClient = await dbMaker.db; 
     List<Map<String, dynamic>> maps = await dbClient.query(
-      "UserData", // Match the table name 'UserData'
+      "UserData",
       where: "id = ?",
       whereArgs: [savedId],
     );
