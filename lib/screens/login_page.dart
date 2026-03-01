@@ -3,6 +3,7 @@ import 'package:onechat/screens/home_screen.dart';
 import 'package:onechat/models/models.dart';
 import 'package:onechat/functions/functions.dart';
 import 'package:onechat/screens/signup_page.dart';
+import 'package:onechat/widgets/bubble_loading_widget.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -15,27 +16,28 @@ class _LoginPageState extends State<LoginPage> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   bool _isPasswordVisible = false;
+  bool _isLoading = false;
 
   Future<void> _handleLogin() async {
-    // Call the updated logic that returns a String?
+    setState(() => _isLoading = true);
+
     String? errorMessage = await loginLogic(
       email: emailController.text.trim(),
       password: passwordController.text.trim(),
       allUsers: globalUserList,
     );
 
+    if (!mounted) return;
+    setState(() => _isLoading = false); // Stop loading after response
+
     if (errorMessage == null) {
-      // Success case
       isLoggedIn = true;
-      if (!mounted) return;
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => const HomeScreen()),
         (route) => false,
       );
     } else {
-      // Failure case: Show the message from the server
-      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(errorMessage),
@@ -55,6 +57,7 @@ class _LoginPageState extends State<LoginPage> {
       body: SingleChildScrollView(
         child: Column(
           children: [
+            // Header Section
             Container(
               height: 200,
               width: double.infinity,
@@ -64,13 +67,11 @@ class _LoginPageState extends State<LoginPage> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                 ),
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(80),
-                ),
+                borderRadius: BorderRadius.only(bottomLeft: Radius.circular(80)),
               ),
-              child: Column(
+              child: const Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
+                children: [
                   Icon(Icons.chat_bubble_outline, size: 80, color: Colors.white),
                   SizedBox(height: 10),
                   Text(
@@ -80,34 +81,23 @@ class _LoginPageState extends State<LoginPage> {
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
                       fontFamily: 'Barrio',
-                      letterSpacing: 1.2,
                     ),
                   ),
                 ],
               ),
             ),
+            // Form Section
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 40),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    "Welcome Back",
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  ),
+                  const Text("Welcome Back", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
                   const Text("Sign in to continue", style: TextStyle(color: Colors.grey)),
                   const SizedBox(height: 40),
-                  TextField(
-                    controller: emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: InputDecoration(
-                      prefixIcon: const Icon(Icons.email_outlined),
-                      labelText: 'Email Address',
-                      hintText: 'name@example.com',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  ),
+                  _buildInput(emailController, Icons.email_outlined, 'Email Address', false),
                   const SizedBox(height: 20),
+                  // Password Field
                   TextField(
                     controller: passwordController,
                     obscureText: !_isPasswordVisible,
@@ -122,42 +112,26 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                   const SizedBox(height: 40),
+                  // Authenticate Button
                   SizedBox(
                     width: double.infinity,
                     height: 55,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        elevation: 2,
                       ),
-                      onPressed: () {
-                        // FIX: Correctly call the function
-                        _handleLogin();
-                      },
-                      child: const Text(
-                        'AUTHENTICATE',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
+                      onPressed: _isLoading ? null : _handleLogin,
+                      child: _isLoading 
+                        ? const BubbleLoading() 
+                        : const Text('AUTHENTICATE', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                     ),
                   ),
                   const SizedBox(height: 20),
                   Center(
                     child: TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const SignupPage()),
-                        );
-                      },
-                      child: const Text(
-                        "Don't have an account? Signup here",
-                        style: TextStyle(
-                          color: Colors.green,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SignupPage())),
+                      child: const Text("Don't have an account? Signup here", style: TextStyle(color: Colors.green)),
                     ),
                   ),
                 ],
@@ -165,6 +139,17 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildInput(TextEditingController ctrl, IconData icon, String label, bool isPass) {
+    return TextField(
+      controller: ctrl,
+      decoration: InputDecoration(
+        prefixIcon: Icon(icon),
+        labelText: label,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
