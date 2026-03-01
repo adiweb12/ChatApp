@@ -9,7 +9,7 @@ import 'package:onechat/database/database_manager.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:onechat/backend/api_services.dart';
 import 'package:dio/dio.dart';
-import 'package:constant/api_urls.dart';
+import 'package:onechat/constant/api_urls.dart';
 
 
 //________LOGOUT___LOGIC______
