@@ -64,15 +64,21 @@ Future<bool> editMail({
   required List<UserDetails> allUsers,
 }) async {
   try {
-    if(currentUser !=null && currentUser!.phoneNumber == phonenumber){
-    currentUser!.email = newMail;
-    return true;
+    // Check if the update was successful (returns true/false)
+    bool isUpdated = await updateEmailDataBase(phonenumber, newMail);
+    
+    if (isUpdated) {
+      // Clear preferences so user has to log in again with new mail
+      final _sharedPref = await SharedPreferences.getInstance();
+      await _sharedPref.clear();
+      return true;
     }
-      return false;
+    return false;
   } catch (e) {
     return false;
   }
 }
+
 
 //________login_______logic_______
 Future<bool> loginLogic({
@@ -112,11 +118,14 @@ Future<bool> updatePassword({
   required List<UserDetails> allUsers,
 }) async {
   try {
-    if(currentUser != null && currentUser!.email==email){
-    currentUser!.password = newPassword;
-    return true;
+    bool isUpdated = await updatePassDataBase(email, newPassword);
+    
+    if (isUpdated) {
+      final _sharedPref = await SharedPreferences.getInstance();
+      await _sharedPref.clear();
+      return true;
     }
-      return false;
+    return false;
   } catch (e) {
     return false;
   }
