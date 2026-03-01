@@ -1,28 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:onechat/models/models.dart';
-import 'package:onechat/functions/functions.dart';
 import 'package:onechat/screens/login_page.dart';
+import 'package:onechat/functions/functions.dart';
+import 'package:onechat/widgets/bubble_loading_widget.dart';
+import 'package:onechat/constant/constants.dart';
 
-/// Helper to handle navigation and feedback
-Future<void> goLogin(BuildContext context, bool userChoice) async {
-  if (userChoice) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Update Successful!"), backgroundColor: Colors.green),
-    );
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => const LoginPage()),
-      (route) => false,
-    );
-  } else {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Something went wrong.... Check credentials.."),
-        backgroundColor: Colors.redAccent,
-      ),
-    );
-  }
-}
+// ==========================================
+// UPDATE EMAIL PAGE
+// ==========================================
 
 class EditMailPage extends StatefulWidget {
   const EditMailPage({super.key});
@@ -33,12 +18,54 @@ class EditMailPage extends StatefulWidget {
 class _EditMailPageState extends State<EditMailPage> {
   final phoneController = TextEditingController();
   final emailController = TextEditingController();
+  bool _isLoading = false;
+
+  Future<void> _handleUpdateMail() async {
+    if (phoneController.text.isEmpty || emailController.text.isEmpty) {
+      _showSnackBar("Please fill all fields", Colors.orange);
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    // Calling the function from functions.dart
+    String? errorMessage = await editMail(
+      phonenumber: phoneController.text,
+      newMail: emailController.text,
+      allUsers: [], // Assuming logic handles internal list
+    );
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (errorMessage == null) {
+      _showSnackBar("Mail updated! Please login again.", Colors.green);
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginPage()),
+        (route) => false,
+      );
+    } else {
+      _showSnackBar(errorMessage, Colors.redAccent);
+    }
+  }
+
+  void _showSnackBar(String message, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(20),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      // Added Stack to place a back button over the header
       body: Stack(
         children: [
           SingleChildScrollView(
@@ -55,21 +82,16 @@ class _EditMailPageState extends State<EditMailPage> {
                         style: TextStyle(color: Colors.grey, fontSize: 16),
                       ),
                       const SizedBox(height: 30),
-                      
-                      // Phone Field - Changed to Phone Keyboard
                       TextField(
                         controller: phoneController,
                         keyboardType: TextInputType.phone,
                         decoration: InputDecoration(
                           prefixIcon: const Icon(Icons.phone_outlined),
                           labelText: 'Phone Number',
-                          hintText: '+91 1234567890',
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                       ),
                       const SizedBox(height: 20),
-
-                      // Email Field
                       TextField(
                         controller: emailController,
                         keyboardType: TextInputType.emailAddress,
@@ -80,17 +102,10 @@ class _EditMailPageState extends State<EditMailPage> {
                         ),
                       ),
                       const SizedBox(height: 40),
-
                       _buildSubmitButton(
                         label: 'Update Mail',
-                        onPressed: () async {
-                          bool success = await editMail(
-                            phonenumber: phoneController.text, 
-                            newMail: emailController.text, 
-                            allUsers: globalUserList
-                          );
-                          goLogin(context, success);
-                        },
+                        isLoading: _isLoading,
+                        onPressed: _isLoading ? null : _handleUpdateMail,
                       ),
                     ],
                   ),
@@ -98,7 +113,6 @@ class _EditMailPageState extends State<EditMailPage> {
               ],
             ),
           ),
-          // Clean Back Button
           SafeArea(
             child: IconButton(
               icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -111,6 +125,10 @@ class _EditMailPageState extends State<EditMailPage> {
   }
 }
 
+// ==========================================
+// UPDATE PASSWORD PAGE
+// ==========================================
+
 class EditPassPage extends StatefulWidget {
   const EditPassPage({super.key});
   @override
@@ -121,6 +139,48 @@ class _EditPassPageState extends State<EditPassPage> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   bool _obscure = true;
+  bool _isLoading = false;
+
+  Future<void> _handleUpdatePass() async {
+    if (emailController.text.isEmpty || passwordController.text.isEmpty) {
+      _showErrorSnackBar("Please fill all fields");
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    String? errorMessage = await updatePassword(
+      email: emailController.text,
+      newPassword: passwordController.text,
+      allUsers: [], 
+    );
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (errorMessage == null) {
+      _showSuccessSnackBar("Password updated! Please login again.");
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginPage()),
+        (route) => false,
+      );
+    } else {
+      _showErrorSnackBar(errorMessage);
+    }
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.redAccent),
+    );
+  }
+
+  void _showSuccessSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.green),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -143,19 +203,15 @@ class _EditPassPageState extends State<EditPassPage> {
                       ),
                       const Text("Secure your account", style: TextStyle(color: Colors.grey)),
                       const SizedBox(height: 30),
-
                       TextField(
                         controller: emailController,
                         decoration: InputDecoration(
                           prefixIcon: const Icon(Icons.email_outlined),
                           labelText: 'Email',
-                          hintText: 'abcd@efg.com',
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                       ),
                       const SizedBox(height: 20),
-
-                      // Password Field - Added obscureText and Toggle
                       TextField(
                         controller: passwordController,
                         obscureText: _obscure,
@@ -170,17 +226,10 @@ class _EditPassPageState extends State<EditPassPage> {
                         ),
                       ),
                       const SizedBox(height: 40),
-
                       _buildSubmitButton(
                         label: 'Update Password',
-                        onPressed: () async {
-                          bool success = await updatePassword(
-                            email: emailController.text, 
-                            newPassword: passwordController.text, 
-                            allUsers: globalUserList
-                          );
-                          goLogin(context, success);
-                        },
+                        isLoading: _isLoading,
+                        onPressed: _isLoading ? null : _handleUpdatePass,
                       ),
                     ],
                   ),
@@ -200,7 +249,10 @@ class _EditPassPageState extends State<EditPassPage> {
   }
 }
 
-// Reusable Header to keep code DRY
+// ==========================================
+// REUSABLE WIDGETS (HELPER METHODS)
+// ==========================================
+
 Widget _buildHeader(String title) {
   return Container(
     height: 200,
@@ -232,8 +284,11 @@ Widget _buildHeader(String title) {
   );
 }
 
-// Reusable Button
-Widget _buildSubmitButton({required String label, required VoidCallback onPressed}) {
+Widget _buildSubmitButton({
+  required String label,
+  required VoidCallback? onPressed,
+  required bool isLoading,
+}) {
   return SizedBox(
     width: double.infinity,
     height: 55,
@@ -245,10 +300,12 @@ Widget _buildSubmitButton({required String label, required VoidCallback onPresse
         elevation: 2,
       ),
       onPressed: onPressed,
-      child: Text(
-        label,
-        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-      ),
+      child: isLoading
+          ? const BubbleLoading() // Your custom animated widget
+          : Text(
+              label,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
     ),
   );
 }
