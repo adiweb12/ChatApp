@@ -3,17 +3,16 @@ import 'package:onechat/models/models.dart';
 import 'package:onechat/screens/editor_page.dart';
 import 'package:onechat/screens/login_page.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:onechat/constant/constants.dart';
 import 'package:onechat/database/operations/database_operation.dart';
 import 'package:onechat/database/database_manager.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 
 //________LOGOUT___LOGIC______
 Future<void> logOutUser(BuildContext context) async{
     //isLoggedIn = false;
-    final _sharedPref = await SharedPreferences.getInstance();
-    await _sharedPref.clear();
+    await storage.deleteAll();
     Navigator.pushAndRemoveUntil(
     context,
     MaterialPageRoute(builder: (context) => const LoginPage()),
@@ -96,11 +95,10 @@ Future<bool> loginLogic({
       //(user) => user.email == email && user.password == password,
       UserDetails? foundUser = await getUser(email, password);
     if(foundUser != null){;
-    //SharedPreferences
-    final _sharedPref = await SharedPreferences.getInstance();
-    await _sharedPref.setBool(SECRET_LOGIN_KEY,true);
-    await _sharedPref.setString(User_Id,foundUser.id);
-    //isLoggedIn = true;
+    //flutter_secure_storage
+    await storage.write(key: SECRET_LOGIN_KEY,value: 'true');
+    await storage.write(key: User_Id,value: foundUser.id);
+    
     return true;
     }
     return false;
