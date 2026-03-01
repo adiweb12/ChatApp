@@ -76,8 +76,7 @@ Future<bool> editMail({
   }
 }
 
-//________login_______logic_______
-Future<bool> loginLogic({
+Future<String?> loginLogic({
   required String email,
   required String password,
   required List<UserDetails> allUsers,
@@ -108,22 +107,21 @@ Future<bool> loginLogic({
 
       await insertUser(userToSync);
       currentUser = userToSync;
-      return true;
+      return null; // No error means success
     }
   } on DioException catch (e) {
-    if (e.type == DioExceptionType.connectionError || e.type == DioExceptionType.connectionTimeout) {
-      // Offline check
-      UserDetails? offlineUser = await getUser(email, password);
-      if (offlineUser != null) {
-        currentUser = offlineUser;
-        return true;
-      }
+    // This captures the message sent by your Flask: return jsonify({"error": "..."})
+    if (e.response != null && e.response?.data != null) {
+      return e.response?.data["error"] ?? "An unknown error occurred";
     }
-  } catch (e) {
-    return false;
+    if (e.type == DioExceptionType.connectionError) {
+      return "No internet connection";
+    }
   }
-  return false;
+  return "Server unreachable";
 }
+
+
 
 //______update__password____logic____
 Future<bool> updatePassword({
