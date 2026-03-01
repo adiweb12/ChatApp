@@ -42,3 +42,34 @@ Future<UserDetails?> getUser(String email, String password) async {
   }
   return null;
 }
+
+Future<bool> updatePassDataBase(String email, String newPassword) async {
+  try {
+    final dbClient = await dbMaker.db;
+    int count = await dbClient.update(
+      "UserData",
+      {'password': newPassword}, // The column to update
+      where: "email = ?",        // The condition
+      whereArgs: [email],
+    );
+    return count > 0; // Returns true if a row was updated
+  } catch (e) {
+    return false;
+  }
+}
+
+
+Future<bool> updateEmailDataBase(String phonenumber, String newEmail) async {
+  try {
+    final dbClient = await dbMaker.db;
+    int count = await dbClient.update(
+      "UserData",
+      {'email': newEmail},
+      where: "phoneNumber = ?",
+      whereArgs: [phonenumber],
+    );
+    return count > 0;
+  } catch (e) {
+    return false;
+  }
+}
