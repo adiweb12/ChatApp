@@ -23,7 +23,7 @@ Future<void> logOutUser(BuildContext context) async {
 }
 
 //_________Signup___logic_____
-Future<bool> signupLogic({
+Future<String?> signupLogic({
   required String username,
   required String email,
   required String phonenumber,
@@ -50,12 +50,18 @@ Future<bool> signupLogic({
         dob: dob,
       );
       await insertUser(newUser);
-      return true;
+      return null;
     }
-  } catch (e) {
-    return false;
+  } on DioException catch (e) {
+    if (e.response != null && e.response?.data != null) {
+      // Return the specific error message from Flask
+      return e.response?.data["error"] ?? "Authentication failed ☹️";
+    }
+    if (e.type == DioExceptionType.connectionError || e.type == DioExceptionType.connectionTimeout) {
+      return "Connection to Onechat Brain  failed 😱";
+    }
   }
-  return false;
+  return "An unexpected fever occurred 🤧";
 }
 
 //__________mail______edit____logic___
