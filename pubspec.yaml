@@ -1,7 +1,7 @@
 name: onechat
 description: "A new Flutter project."
 publish_to: 'none'
-version: 2.2.0+1
+version: 2.5.0+1
 
 environment:
   sdk: ^3.10.4
@@ -12,9 +12,9 @@ dependencies:
   cupertino_icons: ^1.0.8
   flutter_contacts: ^1.1.9+2
   permission_handler: ^11.3.1
-  shared_preferences: ^2.5.4
   sqflite: ^2.3.0
   path: ^1.9.0
+  flutter_secure_storage: ^10.0.0
   
 dev_dependencies:
   flutter_test:
