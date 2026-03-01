@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:onechat/screens/login_page.dart';
 import 'package:onechat/models/models.dart';
 import 'package:onechat/functions/functions.dart';
+import 'package:onechat/widgets/bubble_loading_widget.dart';
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
@@ -17,12 +18,24 @@ class _SignupPageState extends State<SignupPage> {
   final usernameController = TextEditingController();
   final dobController = TextEditingController(); // Added missing controller
   bool _isPasswordVisible = false;
+  bool _isLoading = false;
 
-  Future<void> _signupInfoChecker(bool signupInfo, BuildContext context) async {
-    if (signupInfo) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Account created! Please login."), backgroundColor: Colors.green),
-      );
+Future<void> _handleSignup() async {
+    setState(() => _isLoading = true);
+    
+    String? errorMessage = await signupLogic(
+      username: usernameController.text,
+      email: emailController.text,
+      phonenumber: phonenumberController.text,
+      dob: dobController.text,
+      password: passwordController.text,
+      allUsers: globalUserList,
+    );
+
+    if (!mounted) return;
+    setState(() => _isLoading = false); // Important: Stop loading on error!
+
+    if (errorMessage == null) {
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => const LoginPage()),
@@ -31,14 +44,13 @@ class _SignupPageState extends State<SignupPage> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text("Signup failed, check credentials..."),
+          content: Text(errorMessage),
           backgroundColor: Colors.redAccent,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       );
     }
-  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -134,18 +146,10 @@ class _SignupPageState extends State<SignupPage> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         elevation: 2,
                       ),
-                      onPressed: () async {
-                        bool success = await signupLogic(
-                          username: usernameController.text,
-                          email: emailController.text,
-                          phonenumber: phonenumberController.text,
-                          dob: dobController.text,
-                          password: passwordController.text,
-                          allUsers: globalUserList,
-                        );
-                        await _signupInfoChecker(success, context);
-                      },
-                      child: const Text('REGISTER', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      onPressed: _isLoading ? null : _handleSignup,
+                      child: _isLoading 
+                        ? const BubbleLoading() 
+                        : const Text('REGISTER', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                     ),
                   ),
                   
