@@ -16,25 +16,43 @@ class _LoginPageState extends State<LoginPage> {
   final passwordController = TextEditingController();
   bool _isPasswordVisible = false;
 
-  Future<void> _loginInfoChecker(bool loginInfo, BuildContext context) async {
-    if (loginInfo) {
-      isLoggedIn = true;
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
-        (route) => false,
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text("Login failed, check credentials..."),
-          backgroundColor: Colors.redAccent,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
-      );
-    }
+  // Inside _LoginPageState
+
+Future<void> _handleLogin() async {
+  // Show a loading indicator if you want
+  String? errorMessage = await loginLogic(
+    email: emailController.text.trim(),
+    password: passwordController.text.trim(),
+    allUsers: globalUserList,
+  );
+
+  if (errorMessage == null) {
+    // Success
+    isLoggedIn = true;
+    if (!mounted) return;
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => const HomeScreen()),
+      (route) => false,
+    );
+  } else {
+    // Show the actual message from the server
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(errorMessage), // Displaying server message here
+        backgroundColor: Colors.redAccent,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(20),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
   }
+}
+
+// ... inside your build method, update the ElevatedButton:
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -130,12 +148,7 @@ class _LoginPageState extends State<LoginPage> {
                         elevation: 2,
                       ),
                       onPressed: () async {
-                        bool success = await loginLogic(
-                          email: emailController.text,
-                          password: passwordController.text,
-                          allUsers: globalUserList,
-                        );
-                        await _loginInfoChecker(success, context);
+                        await _handleLogin,
                       },
                       child: const Text(
                         'AUTHENTICATE',
