@@ -11,30 +11,28 @@ import 'package:onechat/backend/api_services.dart';
 import 'package:dio/dio.dart';
 import 'package:onechat/constant/api_urls.dart';
 
-
 //________LOGOUT___LOGIC______
-Future<void> logOutUser(BuildContext context) async{
-    //isLoggedIn = false;
-    await storage.deleteAll();
-    Navigator.pushAndRemoveUntil(
+Future<void> logOutUser(BuildContext context) async {
+  await storage.deleteAll();
+  if (!context.mounted) return;
+  Navigator.pushAndRemoveUntil(
     context,
     MaterialPageRoute(builder: (context) => const LoginPage()),
     (route) => false,
-    );
+  );
 }
 
 //_________Signup___logic_____
 Future<bool> signupLogic({
-    required String username,
-    required String email,
-    required String phonenumber,
-    required String dob,
-    required String password,
-    required List<UserDetails> allUsers
-}) async{
-    try {
-    // 1. SERVER SIGNUP
-    final response = await api.client.post("$signupBaseUrl", data: {
+  required String username,
+  required String email,
+  required String phonenumber,
+  required String dob,
+  required String password,
+  required List<UserDetails> allUsers,
+}) async {
+  try {
+    final response = await api.client.post(signupBaseUrl, data: {
       "userName": username,
       "email": email,
       "phoneNumber": phonenumber,
@@ -43,9 +41,8 @@ Future<bool> signupLogic({
     });
 
     if (response.statusCode == 201) {
-      // 2. STORE LOCALLY SO USER CAN LOGIN OFFLINE LATER
       UserDetails newUser = UserDetails(
-        id: DateTime.now().millisecondsSinceEpoch.toString(), // Temp ID until login
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
         userName: username,
         email: email,
         phoneNumber: phonenumber,
@@ -68,11 +65,8 @@ Future<bool> editMail({
   required List<UserDetails> allUsers,
 }) async {
   try {
-    // Check if the update was successful (returns true/false)
     bool isUpdated = await updateEmailDataBase(phonenumber, newMail);
-    
     if (isUpdated) {
-      // Clear preferences so user has to log in again with new mail
       await storage.deleteAll();
       return true;
     }
@@ -82,8 +76,6 @@ Future<bool> editMail({
   }
 }
 
-
-//________login_______logic_______
 //________login_______logic_______
 Future<bool> loginLogic({
   required String email,
@@ -97,8 +89,8 @@ Future<bool> loginLogic({
     });
 
     if (response.statusCode == 200) {
-      final data = response.data; // Added this
-      final userData = data["user"]; // Added this
+      final data = response.data;
+      final userData = data["user"];
 
       await storage.write(key: "access_token", value: data["access_token"]);
       await storage.write(key: "refresh_token", value: data["refresh_token"]);
@@ -118,14 +110,21 @@ Future<bool> loginLogic({
       currentUser = userToSync;
       return true;
     }
-  } on DioException catch (e) { // Fixed parenthesis error
+  } on DioException catch (e) {
     if (e.type == DioExceptionType.connectionError || e.type == DioExceptionType.connectionTimeout) {
-        return false;
+      // Offline check
+      UserDetails? offlineUser = await getUser(email, password);
+      if (offlineUser != null) {
+        currentUser = offlineUser;
+        return true;
       }
     }
+  } catch (e) {
+    return false;
   }
   return false;
 }
+
 //______update__password____logic____
 Future<bool> updatePassword({
   required String email,
@@ -134,7 +133,6 @@ Future<bool> updatePassword({
 }) async {
   try {
     bool isUpdated = await updatePassDataBase(email, newPassword);
-    
     if (isUpdated) {
       await storage.deleteAll();
       return true;
@@ -149,19 +147,13 @@ Future<bool> updatePassword({
 Future<void> dropDownLogic(String value, BuildContext context) async {
   switch (value) {
     case 'editMail':
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const EditMailPage()),
-      );
+      Navigator.push(context, MaterialPageRoute(builder: (context) => const EditMailPage()));
       break;
     case 'editPass':
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const EditPassPage()),
-      );
+      Navigator.push(context, MaterialPageRoute(builder: (context) => const EditPassPage()));
       break;
-          case 'logOut':
-            logOutUser(context);
+    case 'logOut':
+      logOutUser(context);
       break;
   }
 }
@@ -169,19 +161,15 @@ Future<void> dropDownLogic(String value, BuildContext context) async {
 //________Contact_____loading______logic
 Future<List<UserDetails>> getMatchedContacts(List<UserDetails> allUsers) async {
   if (await FlutterContacts.requestPermission()) {
-    // Fixed: 'Contact' type (not Contacts)
-    List<Contact> _phoneContacts = await FlutterContacts.getContacts(withProperties: true);
+    List<Contact> phoneContacts = await FlutterContacts.getContacts(withProperties: true);
     List<UserDetails> matchedUsers = [];
 
-    for (var contact in _phoneContacts) { // Fixed: plural s
+    for (var contact in phoneContacts) {
       for (var phone in contact.phones) {
-        String _cleanNumber = phone.number.replaceAll(RegExp(r'\D'), '');
-
+        String cleanNumber = phone.number.replaceAll(RegExp(r'\D'), '');
         for (var user in allUsers) {
-          String _userCleanNumber = user.phoneNumber.replaceAll(RegExp(r'\D'), '');
-
-          if (_userCleanNumber == _cleanNumber) {
-
+          String userCleanNumber = user.phoneNumber.replaceAll(RegExp(r'\D'), '');
+          if (userCleanNumber == cleanNumber) {
             if (!matchedUsers.contains(user)) {
               matchedUsers.add(user);
             }
