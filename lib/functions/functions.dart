@@ -68,8 +68,7 @@ Future<bool> editMail({
     
     if (isUpdated) {
       // Clear preferences so user has to log in again with new mail
-      final _sharedPref = await SharedPreferences.getInstance();
-      await _sharedPref.clear();
+      await storage.deleteAll();
       return true;
     }
     return false;
@@ -119,8 +118,7 @@ Future<bool> updatePassword({
     bool isUpdated = await updatePassDataBase(email, newPassword);
     
     if (isUpdated) {
-      final _sharedPref = await SharedPreferences.getInstance();
-      await _sharedPref.clear();
+      await storage.deleteAll();
       return true;
     }
     return false;
