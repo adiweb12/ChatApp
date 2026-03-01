@@ -84,7 +84,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
               child: IconButton(
-                onPressed: () { Navigator.pushReplacement(context,MaterialPageRoute(builder: (context) => const AddChatGroupPage()),
+                onPressed: () { Navigator.push(context,MaterialPageRoute(builder: (context) => const AddChatGroupPage()),
   ); // Close function call
 }, // Close onPressed
 
