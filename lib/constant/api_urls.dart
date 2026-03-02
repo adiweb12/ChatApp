@@ -9,3 +9,5 @@ const refreshBaseUrl = "$baseUrl/onechat/refresh";
 const updateEmailUrl = "$baseUrl/onechat/update-email";
 
 const updatePasswordUrl = "$baseUrl/onechat/update-password";
+
+const syncContactsUrl = "$baseUrl/onechat/sync-contacts";
