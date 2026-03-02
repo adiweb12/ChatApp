@@ -73,3 +73,43 @@ Future<bool> updateEmailDataBase(String phonenumber, String newEmail) async {
     return false;
   }
 }
+
+Future<bool> insertSyncedContact(SyncedContact contact) async {
+  try {
+    final dbClient = await dbMaker.db;
+    await dbClient.insert(
+      "synedContacts",
+      {
+        'id': contact.id,
+        'currentUserPhone': contact.currentUserPhone,
+        'userName': contact.userName,
+        'phoneNumber': contact.phoneNumber,
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+// Fetch only contacts belonging to the logged-in user
+Future<List<SyncedContact>> getLocalSyncedContacts(String currentUserPhone) async {
+  final dbClient = await dbMaker.db;
+  final List<Map<String, dynamic>> maps = await dbClient.query(
+    "synedContacts",
+    where: "currentUserPhone = ?",
+    whereArgs: [currentUserPhone],
+  );
+
+  return List.generate(maps.length, (i) {
+    return SyncedContact(
+      id: maps[i]['id'],
+      currentUserPhone: maps[i]['currentUserPhone'],
+      userName: maps[i]['userName'],
+      phoneNumber: maps[i]['phoneNumber'],
+    );
+  });
+}
+
+
