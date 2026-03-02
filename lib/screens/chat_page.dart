@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:onechat/models/models.dart';
+// Note: You will need to add 'web_socket_channel' to pubspec.yaml
 import 'package:web_socket_channel/io.dart';
-import 'dart:convert';
 import 'package:onechat/constant/api_url.dart';
+import 'dart:convert';
 
 class ChatPage extends StatefulWidget {
   final String receiverPhone;
@@ -21,37 +23,39 @@ class _ChatPageState extends State<ChatPage> {
   @override
   void initState() {
     super.initState();
-    // Connect to WebSocket (Replace with your IP)
+    // Connect to your Flask-SocketIO server
     _channel = IOWebSocketChannel.connect('$baseUrl');
     
-    // Join your own room to listen for messages
+    // Join a room based on current user's phone
     _channel.sink.add(jsonEncode({
       'event': 'join',
       'data': {'phone': currentUser!.phoneNumber}
     }));
 
-    // Listen for incoming messages
     _channel.stream.listen((message) {
       final data = jsonDecode(message);
-      if (data['sender_phone'] == widget.receiverPhone) {
-        setState(() => _messages.add(data));
-      }
+      setState(() {
+        _messages.add(data);
+      });
     });
   }
 
   void _sendMessage() {
     if (_messageController.text.isEmpty) return;
-    
     final msgData = {
       'sender_phone': currentUser!.phoneNumber,
       'receiver_phone': widget.receiverPhone,
       'message': _messageController.text,
-      'time': DateTime.now().toString(),
     };
-
     _channel.sink.add(jsonEncode({'event': 'send_message', 'data': msgData}));
     setState(() => _messages.add(msgData));
     _messageController.clear();
+  }
+
+  @override
+  void dispose() {
+    _channel.sink.close();
+    super.dispose();
   }
 
   @override
@@ -65,16 +69,17 @@ class _ChatPageState extends State<ChatPage> {
               itemCount: _messages.length,
               itemBuilder: (context, index) {
                 bool isMe = _messages[index]['sender_phone'] == currentUser!.phoneNumber;
-                return Align(
-                  alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-                  child: Container(
-                    padding: const EdgeInsets.all(10),
-                    margin: const EdgeInsets.all(5),
-                    decoration: BoxDecoration(
-                      color: isMe ? Colors.green[100] : Colors.grey[200],
-                      borderRadius: BorderRadius.circular(10),
+                return ListTile(
+                  title: Align(
+                    alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+                    child: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: isMe ? Colors.green[100] : Colors.grey[300],
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(_messages[index]['message']),
                     ),
-                    child: Text(_messages[index]['message']),
                   ),
                 );
               },
@@ -85,10 +90,10 @@ class _ChatPageState extends State<ChatPage> {
             child: Row(
               children: [
                 Expanded(child: TextField(controller: _messageController)),
-                IconButton(icon: const Icon(Icons.send, color: Colors.green), onPressed: _sendMessage),
+                IconButton(icon: const Icon(Icons.send), onPressed: _sendMessage),
               ],
             ),
-          ),
+          )
         ],
       ),
     );
