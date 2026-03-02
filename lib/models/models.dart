@@ -16,10 +16,23 @@ class UserDetails {
   });
 }
 
+class SyncedContact {
+  final String id;
+  final String currentUserPhone; // The account this contact belongs to
+  final String userName;
+  final String phoneNumber;
+
+  SyncedContact({
+    required this.id,
+    required this.currentUserPhone,
+    required this.userName,
+    required this.phoneNumber,
+  });
+}
+
+
 // Global list for demo purposes
-List<UserDetails> globalUserList = [
-  UserDetails(id: "1", userName: "Adithvs", phoneNumber: "8138872364", email: "adith@gmail.com", password: "1234567", dob: "01/01/2000")
-];
+List<UserDetails> globalUserList = [];
 
 bool isLoggedIn = false; 
 UserDetails? currentUser;
