@@ -21,7 +21,8 @@ class _AddChatGroupPageState extends State<AddChatGroupPage> {
   }
 
   void _loadMatchedContacts() async {
-    var users = await getMatchedContacts(globalUserList);
+    // Now calls the backend-synced function
+    var users = await getMatchedContacts(); 
     if (mounted) {
       setState(() {
         matchedContacts = users;
@@ -36,17 +37,28 @@ class _AddChatGroupPageState extends State<AddChatGroupPage> {
       backgroundColor: Colors.white,
       body: Column(
         children: [
-          _buildAddContactHeader("Select Contact", context),
+          _buildAddContactHeader("New Chat", context),
+          
+          // NEW GROUP OPTION
+          ListTile(
+            leading: const CircleAvatar(
+              backgroundColor: Color(0xFFE8F5E9),
+              child: Icon(Icons.group, color: Colors.green),
+            ),
+            title: const Text("New Group", style: TextStyle(fontWeight: FontWeight.bold)),
+            onTap: () {
+              // Navigate to Group Creation Page
+            },
+          ),
+          const Divider(thickness: 0.5),
+
           Expanded(
             child: isLoading
                 ? const Center(child: CircularProgressIndicator(color: Colors.green))
                 : matchedContacts.isEmpty
-                    ? const Center(
-                        child: Text("No contacts found on OneChat",
-                            style: TextStyle(color: Colors.grey, fontSize: 16)))
+                    ? const Center(child: Text("Invite friends to OneChat!"))
                     : ListView.builder(
                         itemCount: matchedContacts.length,
-                        padding: const EdgeInsets.only(top: 10),
                         itemBuilder: (context, index) {
                           final user = matchedContacts[index];
                           return ListTile(
@@ -55,11 +67,11 @@ class _AddChatGroupPageState extends State<AddChatGroupPage> {
                               child: Text(user.userName[0].toUpperCase(),
                                   style: const TextStyle(color: Colors.white)),
                             ),
-                            title: Text(user.userName,
-                                style: const TextStyle(fontWeight: FontWeight.bold)),
+                            title: Text(user.userName),
                             subtitle: Text(user.phoneNumber),
-                            trailing: const Icon(Icons.chat, color: Colors.green),
-                            onTap: () {},
+                            onTap: () {
+                              // Start 1-on-1 Chat
+                            },
                           );
                         },
                       ),
@@ -69,6 +81,7 @@ class _AddChatGroupPageState extends State<AddChatGroupPage> {
     );
   }
 }
+
 
 // Renamed to avoid conflict with the other _buildHeader
 Widget _buildAddContactHeader(String title, BuildContext context) {
