@@ -190,52 +190,47 @@ Future<void> dropDownLogic(String value, BuildContext context) async {
 }
 
 //________Contact_____loading______logic
-//________Contact_____Sync______Logic
-Future<List<UserDetails>> getMatchedContacts() async {
+Future<List<SyncedContact>> getMatchedContacts() async {
+  if (currentUser == null) return []; // Safety check
+
   if (await FlutterContacts.requestPermission()) {
-    // 1. Fetch phone contacts
     List<Contact> phoneContacts = await FlutterContacts.getContacts(withProperties: true);
-    
-    // Using a Set to avoid sending duplicate numbers to the server
     Set<String> cleanedNumbers = {};
 
     for (var contact in phoneContacts) {
       for (var phone in contact.phones) {
-        // Match your backend's normalization (remove spaces, dashes, etc.)
         String clean = phone.number.replaceAll(RegExp(r'[\s\-\(\)]'), '');
-        if (clean.isNotEmpty) {
-          cleanedNumbers.add(clean);
-        }
+        if (clean.isNotEmpty) cleanedNumbers.add(clean);
       }
     }
 
-    // Security Check: Match your backend limit (1000)
-    List<String> listToSend = cleanedNumbers.toList();
-    if (listToSend.length > 1000) {
-      listToSend = listToSend.sublist(0, 1000);
-    }
-
     try {
-      // 2. Send to Backend
       final response = await api.client.post(syncContactsUrl, data: {
-        "contacts": listToSend,
+        "contacts": cleanedNumbers.toList(),
       });
 
       if (response.statusCode == 200) {
         List<dynamic> data = response.data["matched_users"];
-        return data.map((json) => UserDetails(
-          id: json["id"].toString(),
-          userName: json["userName"],
-          email: "", // Not returned for privacy
-          phoneNumber: json["phoneNumber"],
-          password: "", 
-          dob: "",
-        )).toList();
+        List<SyncedContact> syncedList = [];
+
+        for (var json in data) {
+          SyncedContact contact = SyncedContact(
+            id: json["id"].toString(),
+            currentUserPhone: currentUser!.phoneNumber, // Tagging
+            userName: json["userName"],
+            phoneNumber: json["phoneNumber"],
+          );
+          
+          // Save to local SQLite
+          await insertSyncedContact(contact);
+          syncedList.add(contact);
+        }
+        return syncedList;
       }
-    } on DioException catch (e) {
-      // Handle your 400 "Too many contacts" or "Must be a list" errors
-      print("Sync Error: ${e.response?.data['error'] ?? 'Server error'}");
+    } catch (e) {
+      // If server fails, fallback to local database
+      return await getLocalSyncedContacts(currentUser!.phoneNumber);
     }
   }
-  return [];
+  return await getLocalSyncedContacts(currentUser!.phoneNumber);
 }
