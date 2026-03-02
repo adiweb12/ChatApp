@@ -189,9 +189,9 @@ Future<void> dropDownLogic(String value, BuildContext context) async {
   }
 }
 
-//________Contact_____loading______logic
+//________Contact_____Sync______Logic
 Future<List<SyncedContact>> getMatchedContacts() async {
-  if (currentUser == null) return []; // Safety check
+  if (currentUser == null) return [];
 
   if (await FlutterContacts.requestPermission()) {
     List<Contact> phoneContacts = await FlutterContacts.getContacts(withProperties: true);
@@ -216,21 +216,38 @@ Future<List<SyncedContact>> getMatchedContacts() async {
         for (var json in data) {
           SyncedContact contact = SyncedContact(
             id: json["id"].toString(),
-            currentUserPhone: currentUser!.phoneNumber, // Tagging
+            currentUserPhone: currentUser!.phoneNumber,
             userName: json["userName"],
             phoneNumber: json["phoneNumber"],
           );
           
-          // Save to local SQLite
+          // Save to local SQLite for offline use and multi-account support
           await insertSyncedContact(contact);
           syncedList.add(contact);
         }
         return syncedList;
       }
     } catch (e) {
-      // If server fails, fallback to local database
-      return await getLocalSyncedContacts(currentUser!.phoneNumber);
+      print("Sync failed, loading local: $e");
     }
   }
+  // Fallback to local DB if offline or server fails
   return await getLocalSyncedContacts(currentUser!.phoneNumber);
+}
+
+//________Create_____Group______Logic
+Future<String?> createGroupLogic(String groupName, List<String> memberIds) async {
+  try {
+    final response = await api.client.post("/onechat/create-group", data: {
+      "groupName": groupName,
+      "members": memberIds.map((id) => int.parse(id)).toList(), // Backend expects Integers
+    });
+
+    if (response.statusCode == 201) {
+      return null; // Success
+    }
+  } on DioException catch (e) {
+    return e.response?.data['error'] ?? "Failed to create group";
+  }
+  return "An error occurred";
 }
