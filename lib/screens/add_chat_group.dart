@@ -39,20 +39,30 @@ class _AddChatGroupPageState extends State<AddChatGroupPage> {
       body: Column(
         children: [
           _buildAddContactHeader("New Chat", context),
-          ListTile(
-            leading: const CircleAvatar(
-              backgroundColor: Color(0xFFE8F5E9),
-              child: Icon(Icons.group, color: Colors.green),
-            ),
-            title: const Text("New Group", style: TextStyle(fontWeight: FontWeight.bold)),
-            onTap: () {
-              // FIXED: Navigate to the selection page you created
-              Navigator.push(
-                context, 
-                MaterialPageRoute(builder: (context) => const SelectParticipantsPage())
-              );
-            },
-          ),
+          // Inside your _AddChatGroupPageState build method...
+
+// 1. New Group Option
+ListTile(
+  leading: const CircleAvatar(
+    backgroundColor: Color(0xFFE8F5E9),
+    child: Icon(Icons.group, color: Colors.green),
+  ),
+  title: const Text("New Group", style: TextStyle(fontWeight: FontWeight.bold)),
+  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SelectParticipantsPage())),
+),
+
+// 2. NEW OPTION: New Chat by Number
+ListTile(
+  leading: const CircleAvatar(
+    backgroundColor: Color(0xFFE3F2FD),
+    child: Icon(Icons.phone_android, color: Colors.blue),
+  ),
+  title: const Text("New Chat by Number", style: TextStyle(fontWeight: FontWeight.bold)),
+  onTap: () => _showAddByNumberDialog(),
+),
+
+const Divider(thickness: 0.5),
+// ... rest of your list
           const Divider(thickness: 0.5),
           Expanded(
             child: isLoading
