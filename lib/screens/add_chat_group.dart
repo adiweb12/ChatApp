@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:onechat/functions/functions.dart';
 import 'package:onechat/models/models.dart';
-import 'package:onechat/screens/home_screen.dart'; // Import where your HomeScreen/Starter is
+import 'package:onechat/screens/home_screen.dart';
+import 'package:onechat/screens/chat_page.dart'; // Import the new chat page
 
 class AddChatGroupPage extends StatefulWidget {
   const AddChatGroupPage({super.key});
@@ -10,9 +11,7 @@ class AddChatGroupPage extends StatefulWidget {
   State<AddChatGroupPage> createState() => _AddChatGroupPageState();
 }
 
-
 class _AddChatGroupPageState extends State<AddChatGroupPage> {
-  // CHANGED: Use SyncedContact to match your functions and models
   List<SyncedContact> matchedContacts = []; 
   bool isLoading = true;
 
@@ -21,61 +20,52 @@ class _AddChatGroupPageState extends State<AddChatGroupPage> {
     super.initState();
     _loadMatchedContacts();
   }
-void _showAddByNumberDialog() {
-  final controller = TextEditingController();
-  bool searching = false;
 
-  showDialog(
-    context: context,
-    builder: (context) => StatefulBuilder( // Use StatefulBuilder to update dialog state
-      builder: (context, setDialogState) {
-        return AlertDialog(
-          title: const Text("Enter Phone Number"),
-          content: TextField(
-            controller: controller,
-            keyboardType: TextInputType.phone,
-            decoration: InputDecoration(
-              hintText: "e.g. 9876543210",
-              prefixIcon: const Icon(Icons.phone),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+  void _showAddByNumberDialog() {
+    final controller = TextEditingController();
+    bool searching = false;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: const Text("Enter Phone Number"),
+            content: TextField(
+              controller: controller,
+              keyboardType: TextInputType.phone,
+              decoration: const InputDecoration(hintText: "e.g. 9876543210", prefixIcon: Icon(Icons.phone)),
             ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text("CANCEL")),
-            ElevatedButton(
-              onPressed: searching ? null : () async {
-                if (controller.text.isEmpty) return;
-                
-                setDialogState(() => searching = true);
-                
-                SyncedContact? result = await findUserByNumber(controller.text);
-                
-                setDialogState(() => searching = false);
-                
-                if (result != null) {
-                  Navigator.pop(context); // Close dialog
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text("Found ${result.userName}! Starting chat...")),
-                  );
-                  // TODO: Navigate to Chat Screen with 'result'
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("User not found on OneChat"), backgroundColor: Colors.redAccent),
-                  );
-                }
-              },
-              child: searching 
-                ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                : const Text("FIND"),
-            ),
-          ],
-        );
-      }
-    ),
-  );
-}
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context), child: const Text("CANCEL")),
+              ElevatedButton(
+                onPressed: searching ? null : () async {
+                  if (controller.text.isEmpty) return;
+                  setDialogState(() => searching = true);
+                  SyncedContact? result = await findUserByNumber(controller.text);
+                  setDialogState(() => searching = false);
+                  
+                  if (result != null) {
+                    Navigator.pop(context);
+                    // NAVIGATE TO CHAT
+                    Navigator.push(context, MaterialPageRoute(
+                      builder: (context) => ChatPage(receiverPhone: result.phoneNumber, receiverName: result.userName)
+                    ));
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("User not found")));
+                  }
+                },
+                child: searching ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Text("FIND"),
+              ),
+            ],
+          );
+        }
+      ),
+    );
+  }
+
   void _loadMatchedContacts() async {
-    var users = await getMatchedContacts(); // This returns List<SyncedContact>
+    var users = await getMatchedContacts();
     if (mounted) {
       setState(() {
         matchedContacts = users;
@@ -91,54 +81,37 @@ void _showAddByNumberDialog() {
       body: Column(
         children: [
           _buildAddContactHeader("New Chat", context),
-          // Inside your _AddChatGroupPageState build method...
-
-// 1. New Group Option
-ListTile(
-  leading: const CircleAvatar(
-    backgroundColor: Color(0xFFE8F5E9),
-    child: Icon(Icons.group, color: Colors.green),
-  ),
-  title: const Text("New Group", style: TextStyle(fontWeight: FontWeight.bold)),
-  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SelectParticipantsPage())),
-),
-
-// 2. NEW OPTION: New Chat by Number
-ListTile(
-  leading: const CircleAvatar(
-    backgroundColor: Color(0xFFE3F2FD),
-    child: Icon(Icons.phone_android, color: Colors.blue),
-  ),
-  title: const Text("New Chat by Number", style: TextStyle(fontWeight: FontWeight.bold)),
-  onTap: () => _showAddByNumberDialog(),
-),
-
-const Divider(thickness: 0.5),
-// ... rest of your list
+          ListTile(
+            leading: const CircleAvatar(backgroundColor: Color(0xFFE8F5E9), child: Icon(Icons.group, color: Colors.green)),
+            title: const Text("New Group", style: TextStyle(fontWeight: FontWeight.bold)),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SelectParticipantsPage())),
+          ),
+          ListTile(
+            leading: const CircleAvatar(backgroundColor: Color(0xFFE3F2FD), child: Icon(Icons.phone_android, color: Colors.blue)),
+            title: const Text("New Chat by Number", style: TextStyle(fontWeight: FontWeight.bold)),
+            onTap: () => _showAddByNumberDialog(),
+          ),
           const Divider(thickness: 0.5),
           Expanded(
             child: isLoading
                 ? const Center(child: CircularProgressIndicator(color: Colors.green))
-                : matchedContacts.isEmpty
-                    ? const Center(child: Text("Invite friends to OneChat!"))
-                    : ListView.builder(
-                        itemCount: matchedContacts.length,
-                        itemBuilder: (context, index) {
-                          final user = matchedContacts[index];
-                          return ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: Colors.green,
-                              child: Text(user.userName[0].toUpperCase(),
-                                  style: const TextStyle(color: Colors.white)),
-                            ),
-                            title: Text(user.userName),
-                            subtitle: Text(user.phoneNumber),
-                            onTap: () {
-                              // Start 1-on-1 Chat logic
-                            },
-                          );
+                : ListView.builder(
+                    itemCount: matchedContacts.length,
+                    itemBuilder: (context, index) {
+                      final user = matchedContacts[index];
+                      return ListTile(
+                        leading: CircleAvatar(backgroundColor: Colors.green, child: Text(user.userName[0].toUpperCase(), style: const TextStyle(color: Colors.white))),
+                        title: Text(user.userName),
+                        subtitle: Text(user.phoneNumber),
+                        onTap: () {
+                          // NAVIGATE TO CHAT
+                          Navigator.push(context, MaterialPageRoute(
+                            builder: (context) => ChatPage(receiverPhone: user.phoneNumber, receiverName: user.userName)
+                          ));
                         },
-                      ),
+                      );
+                    },
+                  ),
           ),
         ],
       ),
@@ -146,6 +119,7 @@ const Divider(thickness: 0.5),
   }
 }
 
+// ... Keep your _buildAddContactHeader and SelectParticipantsPage as they were
 
 // Renamed to avoid conflict with the other _buildHeader
 Widget _buildAddContactHeader(String title, BuildContext context) {
