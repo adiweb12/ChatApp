@@ -5,6 +5,7 @@ import 'package:onechat/models/models.dart';
 import 'package:onechat/functions/functions.dart';
 import 'package:onechat/screens/bottom_bar.dart';
 import 'package:onechat/screens/add_chat_group.dart';
+import 'package:onechat/screens/chat_page.dart';
 
 class Starter extends StatelessWidget {
   const Starter({super.key});
