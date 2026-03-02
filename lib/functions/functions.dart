@@ -190,41 +190,52 @@ Future<void> dropDownLogic(String value, BuildContext context) async {
 }
 
 //________Contact_____loading______logic
+//________Contact_____Sync______Logic
 Future<List<UserDetails>> getMatchedContacts() async {
   if (await FlutterContacts.requestPermission()) {
     // 1. Fetch phone contacts
     List<Contact> phoneContacts = await FlutterContacts.getContacts(withProperties: true);
-    List<String> cleanedNumbers = [];
+    
+    // Using a Set to avoid sending duplicate numbers to the server
+    Set<String> cleanedNumbers = {};
 
     for (var contact in phoneContacts) {
       for (var phone in contact.phones) {
-        // Clean number: remove all non-digits
-        String clean = phone.number.replaceAll(RegExp(r'\D'), '');
-        if (clean.isNotEmpty) cleanedNumbers.add(clean);
+        // Match your backend's normalization (remove spaces, dashes, etc.)
+        String clean = phone.number.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+        if (clean.isNotEmpty) {
+          cleanedNumbers.add(clean);
+        }
       }
+    }
+
+    // Security Check: Match your backend limit (1000)
+    List<String> listToSend = cleanedNumbers.toList();
+    if (listToSend.length > 1000) {
+      listToSend = listToSend.sublist(0, 1000);
     }
 
     try {
       // 2. Send to Backend
       final response = await api.client.post(syncContactsUrl, data: {
-        "contacts": cleanedNumbers,
+        "contacts": listToSend,
       });
 
       if (response.statusCode == 200) {
         List<dynamic> data = response.data["matched_users"];
         return data.map((json) => UserDetails(
-          id: json["id"],
+          id: json["id"].toString(),
           userName: json["userName"],
-          email: json["email"],
+          email: "", // Not returned for privacy
           phoneNumber: json["phoneNumber"],
-          password: "", // Password not sent for security
-          dob: json["dob"],
+          password: "", 
+          dob: "",
         )).toList();
       }
-    } catch (e) {
-      print("Contact Sync Error: $e");
+    } on DioException catch (e) {
+      // Handle your 400 "Too many contacts" or "Must be a list" errors
+      print("Sync Error: ${e.response?.data['error'] ?? 'Server error'}");
     }
   }
   return [];
 }
-
