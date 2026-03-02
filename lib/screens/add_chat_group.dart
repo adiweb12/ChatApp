@@ -21,7 +21,59 @@ class _AddChatGroupPageState extends State<AddChatGroupPage> {
     super.initState();
     _loadMatchedContacts();
   }
+void _showAddByNumberDialog() {
+  final controller = TextEditingController();
+  bool searching = false;
 
+  showDialog(
+    context: context,
+    builder: (context) => StatefulBuilder( // Use StatefulBuilder to update dialog state
+      builder: (context, setDialogState) {
+        return AlertDialog(
+          title: const Text("Enter Phone Number"),
+          content: TextField(
+            controller: controller,
+            keyboardType: TextInputType.phone,
+            decoration: InputDecoration(
+              hintText: "e.g. 9876543210",
+              prefixIcon: const Icon(Icons.phone),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text("CANCEL")),
+            ElevatedButton(
+              onPressed: searching ? null : () async {
+                if (controller.text.isEmpty) return;
+                
+                setDialogState(() => searching = true);
+                
+                SyncedContact? result = await findUserByNumber(controller.text);
+                
+                setDialogState(() => searching = false);
+                
+                if (result != null) {
+                  Navigator.pop(context); // Close dialog
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Found ${result.userName}! Starting chat...")),
+                  );
+                  // TODO: Navigate to Chat Screen with 'result'
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("User not found on OneChat"), backgroundColor: Colors.redAccent),
+                  );
+                }
+              },
+              child: searching 
+                ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : const Text("FIND"),
+            ),
+          ],
+        );
+      }
+    ),
+  );
+}
   void _loadMatchedContacts() async {
     var users = await getMatchedContacts(); // This returns List<SyncedContact>
     if (mounted) {
