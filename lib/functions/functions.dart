@@ -190,26 +190,41 @@ Future<void> dropDownLogic(String value, BuildContext context) async {
 }
 
 //________Contact_____loading______logic
-Future<List<UserDetails>> getMatchedContacts(List<UserDetails> allUsers) async {
+Future<List<UserDetails>> getMatchedContacts() async {
   if (await FlutterContacts.requestPermission()) {
+    // 1. Fetch phone contacts
     List<Contact> phoneContacts = await FlutterContacts.getContacts(withProperties: true);
-    List<UserDetails> matchedUsers = [];
+    List<String> cleanedNumbers = [];
 
     for (var contact in phoneContacts) {
       for (var phone in contact.phones) {
-        String cleanNumber = phone.number.replaceAll(RegExp(r'\D'), '');
-        for (var user in allUsers) {
-          String userCleanNumber = user.phoneNumber.replaceAll(RegExp(r'\D'), '');
-          if (userCleanNumber == cleanNumber) {
-            if (!matchedUsers.contains(user)) {
-              matchedUsers.add(user);
-            }
-          }
-        }
+        // Clean number: remove all non-digits
+        String clean = phone.number.replaceAll(RegExp(r'\D'), '');
+        if (clean.isNotEmpty) cleanedNumbers.add(clean);
       }
     }
-    return matchedUsers;
-  } else {
-    return [];
+
+    try {
+      // 2. Send to Backend
+      final response = await api.client.post(syncContactsUrl, data: {
+        "contacts": cleanedNumbers,
+      });
+
+      if (response.statusCode == 200) {
+        List<dynamic> data = response.data["matched_users"];
+        return data.map((json) => UserDetails(
+          id: json["id"],
+          userName: json["userName"],
+          email: json["email"],
+          phoneNumber: json["phoneNumber"],
+          password: "", // Password not sent for security
+          dob: json["dob"],
+        )).toList();
+      }
+    } catch (e) {
+      print("Contact Sync Error: $e");
+    }
   }
+  return [];
 }
+
