@@ -30,75 +30,93 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
+
 class _HomeScreenState extends State<HomeScreen> {
+  List<SyncedContact> activeChats = [];
+  bool isListLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadActiveChats();
+  }
+
+  // Fetches contacts from local SQLite that belong to current logged in user
+  void _loadActiveChats() async {
+    if (currentUser != null) {
+      var chats = await getLocalSyncedContacts(currentUser!.phoneNumber);
+      setState(() {
+        activeChats = chats;
+        isListLoading = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      // Stack allows us to place the Floating "Add" button precisely
       body: Stack(
         children: [
           Column(
             children: [
-              // Custom Green Header
               _buildHeader("OneChat", context),
-              
-              // Main Content Area
-              const Expanded(
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.chat_bubble_outline, size: 100, color: Colors.grey),
-                      SizedBox(height: 20),
-                      Text(
-                        "No Conversations Yet",
-                        style: TextStyle(fontSize: 18, color: Colors.grey, fontWeight: FontWeight.w500),
-                      ),
-                      Text(
-                        "Tap the + button to start chatting",
-                        style: TextStyle(fontSize: 14, color: Colors.black45),
-                      ),
-                    ],
+              Expanded(
+                child: isListLoading 
+                ? const Center(child: CircularProgressIndicator())
+                : activeChats.isEmpty
+                ? _buildEmptyState()
+                : ListView.builder(
+                    itemCount: activeChats.length,
+                    itemBuilder: (context, index) {
+                      final chat = activeChats[index];
+                      return ListTile(
+                        leading: CircleAvatar(child: Text(chat.userName[0])),
+                        title: Text(chat.userName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: const Text("Tap to view messages"),
+                        onTap: () {
+                          Navigator.push(context, MaterialPageRoute(
+                            builder: (context) => ChatPage(receiverPhone: chat.phoneNumber, receiverName: chat.userName)
+                          ));
+                        },
+                      );
+                    },
                   ),
-                ),
               ),
             ],
           ),
-
-          // Custom "Coming Soon" Button (The IconButton logic you wanted)
+          // Floating Add Button
           Positioned(
             bottom: 30,
             right: 30,
             child: Container(
-              decoration: BoxDecoration(
-                color: Colors.green,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
-                    spreadRadius: 2,
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
+              decoration: BoxDecoration(color: Colors.green, shape: BoxShape.circle),
               child: IconButton(
-                onPressed: () { Navigator.push(context,MaterialPageRoute(builder: (context) => const AddChatGroupPage()),
-  ); // Close function call
-}, // Close onPressed
-
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AddChatGroupPage())).then((_) => _loadActiveChats()),
                 icon: const Icon(Icons.add, color: Colors.white, size: 30),
               ),
             ),
           ),
         ],
       ),
-      // Integrating your Bottom Bar widget
       bottomNavigationBar: const BottomNavigationWidget(),
     );
   }
+
+  Widget _buildEmptyState() {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.chat_bubble_outline, size: 100, color: Colors.grey),
+          Text("No Conversations Yet", style: TextStyle(fontSize: 18, color: Colors.grey)),
+          Text("Tap the + button to start chatting", style: TextStyle(fontSize: 14, color: Colors.black45)),
+        ],
+      ),
+    );
+  }
 }
+
 
 // Reusable Header function
 Widget _buildHeader(String title, BuildContext context) {
