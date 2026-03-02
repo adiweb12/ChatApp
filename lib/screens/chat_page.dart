@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:web_socket_channel/io.dart';
 import 'dart:convert';
+import 'package:onechat/constant/api_url.dart';
 
 class ChatPage extends StatefulWidget {
   final String receiverPhone;
@@ -21,7 +22,7 @@ class _ChatPageState extends State<ChatPage> {
   void initState() {
     super.initState();
     // Connect to WebSocket (Replace with your IP)
-    _channel = IOWebSocketChannel.connect('ws://YOUR_IP:5000');
+    _channel = IOWebSocketChannel.connect('$baseUrl');
     
     // Join your own room to listen for messages
     _channel.sink.add(jsonEncode({
