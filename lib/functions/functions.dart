@@ -251,3 +251,37 @@ Future<String?> createGroupLogic(String groupName, List<String> memberIds) async
   }
   return "An error occurred";
 }
+
+//________Search____User____By____Number
+Future<SyncedContact?> findUserByNumber(String phoneNumber) async {
+  if (currentUser == null) return null;
+  
+  // Clean the number
+  String cleanNumber = phoneNumber.replaceAll(RegExp(r'\D'), '');
+
+  try {
+    final response = await api.client.post(syncContactsUrl, data: {
+      "contacts": [cleanNumber], // Send as a list with one item
+    });
+
+    if (response.statusCode == 200) {
+      List<dynamic> data = response.data["matched_users"];
+      if (data.isNotEmpty) {
+        var json = data[0];
+        SyncedContact newContact = SyncedContact(
+          id: json["id"].toString(),
+          currentUserPhone: currentUser!.phoneNumber,
+          userName: json["userName"],
+          phoneNumber: json["phoneNumber"],
+        );
+
+        // Save to local SQLite so they appear in the contact list later
+        await insertSyncedContact(newContact);
+        return newContact;
+      }
+    }
+  } catch (e) {
+    print("Search Error: $e");
+  }
+  return null; // User not found or error
+}
