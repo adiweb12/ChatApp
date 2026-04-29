@@ -11,4 +11,5 @@ const updateEmailUrl = "$baseUrl/update-email";
 const updatePasswordUrl = "$baseUrl/update-password";
 
 const syncContactsUrl = "$baseUrl/sync-contacts";
-const webSocketIp = "74.220.48.0/24"
+
+const webSocketIp = "wss://onechat-webi.onrender.com";
