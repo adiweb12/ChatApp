@@ -191,82 +191,40 @@ Future<void> dropDownLogic(String value, BuildContext context) async {
 }
 
 //________Contact_____Sync______Logic
-Future<List<SyncedContact>> getMatchedContacts() async {
-  if (currentUser == null) return [];
+Future<SyncedContact?> findUserByNumber(String phoneNumber) async {
+  if (currentUser == null) return null;
 
-  // 🔹 Normalize function (OUTSIDE loop)
-  String normalize(String number) {
-    String clean = number.replaceAll(RegExp(r'\D'), '');
+  String normalized = normalize(phoneNumber);
+  String hashed = hashNumber(normalized);
 
-    // India default (+91)
-    if (clean.length == 10) {
-      return "+91$clean";
-    } else if (clean.length > 10) {
-      return "+$clean";
-    }
+  try {
+    final response = await api.client.post(syncContactsUrl, data: {
+      "contacts": [hashed],
+    });
 
-    return clean;
-  }
+    if (response.statusCode == 200) {
+      List<dynamic> data = response.data["matched_users"];
 
-  if (await FlutterContacts.requestPermission()) {
-    List<Contact> phoneContacts =
-        await FlutterContacts.getContacts(withProperties: true);
+      if (data.isNotEmpty) {
+        var json = data[0];
 
-    Set<String> normalizedNumbers = {};
+        SyncedContact newContact = SyncedContact(
+          id: json["id"].toString(),
+          currentUserPhone: currentUser!.phoneNumber,
+          userName: json["userName"],
+          phoneNumber: json["phoneNumber"],
+        );
 
-    // 🔹 Extract + normalize numbers
-    for (var contact in phoneContacts) {
-      for (var phone in contact.phones) {
-        String normalized = normalize(phone.number);
-
-        if (normalized.isNotEmpty) {
-          normalizedNumbers.add(normalized);
-        }
+        await insertSyncedContact(newContact);
+        return newContact;
       }
     }
-
-    try {
-      // 🔹 Hash numbers before sending
-      final hashedContacts = normalizedNumbers
-          .map((num) => hashNumber(num))
-          .toList();
-
-      final response = await api.client.post(
-        syncContactsUrl,
-        data: {
-          "contacts": hashedContacts,
-        },
-      );
-
-      if (response.statusCode == 200) {
-        List<dynamic> data = response.data["matched_users"];
-
-        List<SyncedContact> syncedList = [];
-
-        for (var json in data) {
-          SyncedContact contact = SyncedContact(
-            id: json["id"].toString(),
-            currentUserPhone: currentUser!.phoneNumber,
-            userName: json["userName"],
-            phoneNumber: json["phoneNumber"],
-          );
-
-          // 🔹 Save locally (offline support)
-          await insertSyncedContact(contact);
-          syncedList.add(contact);
-        }
-
-        return syncedList;
-      }
-    } catch (e) {
-      print("Sync failed, loading local: $e");
-    }
+  } catch (e) {
+    print("Search Error: $e");
   }
 
-  // 🔹 Fallback to local DB
-  return await getLocalSyncedContacts(currentUser!.phoneNumber);
+  return null;
 }
-
 //________Create_____Group______Logic
 Future<String?> createGroupLogic(String groupName, List<String> memberIds) async {
   try {
@@ -287,33 +245,28 @@ Future<String?> createGroupLogic(String groupName, List<String> memberIds) async
 //________Search____User____By____Number
 Future<SyncedContact?> findUserByNumber(String phoneNumber) async {
   if (currentUser == null) return null;
-  
-  // Clean the number
-  String cleanNumber = phoneNumber.replaceAll(RegExp(r'\D'), '');
 
   try {
-    final response = await api.client.post(syncContactsUrl, data: {
-      "contacts": [cleanNumber], // Send as a list with one item
+    final response = await api.client.post("/find-user", data: {
+      "phoneNumber": phoneNumber,
     });
 
     if (response.statusCode == 200) {
-      List<dynamic> data = response.data["matched_users"];
-      if (data.isNotEmpty) {
-        var json = data[0];
-        SyncedContact newContact = SyncedContact(
-          id: json["id"].toString(),
-          currentUserPhone: currentUser!.phoneNumber,
-          userName: json["userName"],
-          phoneNumber: json["phoneNumber"],
-        );
+      final json = response.data["user"];
 
-        // Save to local SQLite so they appear in the contact list later
-        await insertSyncedContact(newContact);
-        return newContact;
-      }
+      SyncedContact contact = SyncedContact(
+        id: json["id"].toString(),
+        currentUserPhone: currentUser!.phoneNumber,
+        userName: json["userName"],
+        phoneNumber: json["phoneNumber"],
+      );
+
+      await insertSyncedContact(contact);
+      return contact;
     }
   } catch (e) {
-    print("Search Error: $e");
+    print("Find user error: $e");
   }
-  return null; // User not found or error
-}
+
+  return null;
+}}
