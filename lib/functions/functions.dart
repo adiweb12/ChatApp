@@ -10,6 +10,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:onechat/backend/api_services.dart';
 import 'package:dio/dio.dart';
 import 'package:onechat/constant/api_urls.dart';
+import 'package:onechat/security/contact_hash.dart';
 
 //________LOGOUT___LOGIC______
 Future<void> logOutUser(BuildContext context) async {
@@ -193,24 +194,53 @@ Future<void> dropDownLogic(String value, BuildContext context) async {
 Future<List<SyncedContact>> getMatchedContacts() async {
   if (currentUser == null) return [];
 
-  if (await FlutterContacts.requestPermission()) {
-    List<Contact> phoneContacts = await FlutterContacts.getContacts(withProperties: true);
-    Set<String> cleanedNumbers = {};
+  // 🔹 Normalize function (OUTSIDE loop)
+  String normalize(String number) {
+    String clean = number.replaceAll(RegExp(r'\D'), '');
 
+    // India default (+91)
+    if (clean.length == 10) {
+      return "+91$clean";
+    } else if (clean.length > 10) {
+      return "+$clean";
+    }
+
+    return clean;
+  }
+
+  if (await FlutterContacts.requestPermission()) {
+    List<Contact> phoneContacts =
+        await FlutterContacts.getContacts(withProperties: true);
+
+    Set<String> normalizedNumbers = {};
+
+    // 🔹 Extract + normalize numbers
     for (var contact in phoneContacts) {
       for (var phone in contact.phones) {
-        String clean = phone.number.replaceAll(RegExp(r'[\s\-\(\)]'), '');
-        if (clean.isNotEmpty) cleanedNumbers.add(clean);
+        String normalized = normalize(phone.number);
+
+        if (normalized.isNotEmpty) {
+          normalizedNumbers.add(normalized);
+        }
       }
     }
 
     try {
-      final response = await api.client.post(syncContactsUrl, data: {
-        "contacts": cleanedNumbers.toList(),
-      });
+      // 🔹 Hash numbers before sending
+      final hashedContacts = normalizedNumbers
+          .map((num) => hashNumber(num))
+          .toList();
+
+      final response = await api.client.post(
+        syncContactsUrl,
+        data: {
+          "contacts": hashedContacts,
+        },
+      );
 
       if (response.statusCode == 200) {
         List<dynamic> data = response.data["matched_users"];
+
         List<SyncedContact> syncedList = [];
 
         for (var json in data) {
@@ -220,18 +250,20 @@ Future<List<SyncedContact>> getMatchedContacts() async {
             userName: json["userName"],
             phoneNumber: json["phoneNumber"],
           );
-          
-          // Save to local SQLite for offline use and multi-account support
+
+          // 🔹 Save locally (offline support)
           await insertSyncedContact(contact);
           syncedList.add(contact);
         }
+
         return syncedList;
       }
     } catch (e) {
       print("Sync failed, loading local: $e");
     }
   }
-  // Fallback to local DB if offline or server fails
+
+  // 🔹 Fallback to local DB
   return await getLocalSyncedContacts(currentUser!.phoneNumber);
 }
 
