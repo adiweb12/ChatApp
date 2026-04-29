@@ -191,39 +191,50 @@ Future<void> dropDownLogic(String value, BuildContext context) async {
 }
 
 //________Contact_____Sync______Logic
-Future<SyncedContact?> findUserByNumber(String phoneNumber) async {
-  if (currentUser == null) return null;
+Future<List<SyncedContact>> getMatchedContacts() async {
+  if (currentUser == null) return [];
 
-  String normalized = normalize(phoneNumber);
-  String hashed = hashNumber(normalized);
+  if (await FlutterContacts.requestPermission()) {
+    final contacts =
+        await FlutterContacts.getContacts(withProperties: true);
 
-  try {
-    final response = await api.client.post(syncContactsUrl, data: {
-      "contacts": [hashed],
-    });
+    Set<String> hashedNumbers = {};
 
-    if (response.statusCode == 200) {
-      List<dynamic> data = response.data["matched_users"];
-
-      if (data.isNotEmpty) {
-        var json = data[0];
-
-        SyncedContact newContact = SyncedContact(
-          id: json["id"].toString(),
-          currentUserPhone: currentUser!.phoneNumber,
-          userName: json["userName"],
-          phoneNumber: json["phoneNumber"],
-        );
-
-        await insertSyncedContact(newContact);
-        return newContact;
+    for (var contact in contacts) {
+      for (var phone in contact.phones) {
+        hashedNumbers.add(normalizeAndHash(phone.number));
       }
     }
-  } catch (e) {
-    print("Search Error: $e");
+
+    try {
+      final response = await api.client.post(syncContactsUrl, data: {
+        "contacts": hashedNumbers.toList(),
+      });
+
+      if (response.statusCode == 200) {
+        List data = response.data["matched_users"];
+        List<SyncedContact> list = [];
+
+        for (var json in data) {
+          final c = SyncedContact(
+            id: json["id"].toString(),
+            currentUserPhone: currentUser!.phoneNumber,
+            userName: json["userName"],
+            phoneNumber: json["phoneNumber"],
+          );
+
+          await insertSyncedContact(c);
+          list.add(c);
+        }
+
+        return list;
+      }
+    } catch (e) {
+      print("Sync error: $e");
+    }
   }
 
-  return null;
+  return await getLocalSyncedContacts(currentUser!.phoneNumber);
 }
 //________Create_____Group______Logic
 Future<String?> createGroupLogic(String groupName, List<String> memberIds) async {
@@ -247,26 +258,32 @@ Future<SyncedContact?> findUserByNumber(String phoneNumber) async {
   if (currentUser == null) return null;
 
   try {
-    final response = await api.client.post("/find-user", data: {
-      "phoneNumber": phoneNumber,
+    final hashed = normalizeAndHash(phoneNumber); // ✅ FIX
+
+    final response = await api.client.post(syncContactsUrl, data: {
+      "contacts": [hashed],
     });
 
     if (response.statusCode == 200) {
-      final json = response.data["user"];
+      List data = response.data["matched_users"];
 
-      SyncedContact contact = SyncedContact(
-        id: json["id"].toString(),
-        currentUserPhone: currentUser!.phoneNumber,
-        userName: json["userName"],
-        phoneNumber: json["phoneNumber"],
-      );
+      if (data.isNotEmpty) {
+        var json = data[0];
 
-      await insertSyncedContact(contact);
-      return contact;
+        final contact = SyncedContact(
+          id: json["id"].toString(),
+          currentUserPhone: currentUser!.phoneNumber,
+          userName: json["userName"],
+          phoneNumber: json["phoneNumber"],
+        );
+
+        await insertSyncedContact(contact);
+        return contact;
+      }
     }
   } catch (e) {
-    print("Find user error: $e");
+    print("Find error: $e");
   }
 
   return null;
-}}
+}
