@@ -1,6 +1,6 @@
 const baseUrl = "https://onechat-webi.onrender.com";
 
-const loginBaseUrl = "$baseUrl/login/vdhj67";
+const loginBaseUrl = "$baseUrl/login";
 
 const signupBaseUrl = "$baseUrl/signup";
 
