@@ -207,7 +207,10 @@ class _ChatPageState extends State<ChatPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: buildAppBar(),
+    appBar: PreferredSize(
+     preferredSize: const Size.fromHeight(60), // Set your desired height
+  child: buildAppBar(),
+),
       backgroundColor: const Color(0xFFECE5DD), // WhatsApp style bg
       body: Column(
         children: [
