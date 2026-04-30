@@ -10,6 +10,8 @@ const updateEmailUrl = "$baseUrl/update-email";
 
 const updatePasswordUrl = "$baseUrl/update-password";
 
-const syncContactsUrl = "$baseUrl/find-user";
+const shshsj = "$baseUrl/sync-contacts";
+
+const FindUserUrl = "$baseUrl/find-user";
 
 const webSocketIp = "wss://onechat-webi.onrender.com";
