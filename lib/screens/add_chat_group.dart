@@ -15,11 +15,14 @@ class _AddChatGroupPageState extends State<AddChatGroupPage> {
   List<SyncedContact> matchedContacts = []; 
   bool isLoading = true;
 
-  @override
-  void initState() {
-    super.initState();
+@override
+void initState() {
+  super.initState();
+
+  WidgetsBinding.instance.addPostFrameCallback((_) {
     _loadMatchedContacts();
-  }
+  });
+}
 
   // --- FIX 1: Passed context here ---
   void _loadMatchedContacts() async {
