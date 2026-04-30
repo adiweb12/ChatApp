@@ -65,7 +65,7 @@ class _AddChatGroupPageState extends State<AddChatGroupPage> {
   }
 
   void _loadMatchedContacts() async {
-    var users = await getMatchedContacts();
+    var users = await getMatchedContacts(context);
     if (mounted) {
       setState(() {
         matchedContacts = users;
