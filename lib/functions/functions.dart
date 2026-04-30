@@ -196,8 +196,8 @@ String clean(String phone) => phone.replaceAll(RegExp(r'\D'), '');
 
 Future<List<SyncedContact>> getMatchedContacts(BuildContext context) async {
   try {
-    // ✅ STEP 1: Request permission (v2 API)
-    bool permission = await FlutterContacts.requestPermission(readonly: true);
+    // ✅ v1 permission
+    bool permission = await FlutterContacts.requestPermission();
 
     if (!permission) {
       _showDebug(context, "Permission Denied ❌");
@@ -206,13 +206,8 @@ Future<List<SyncedContact>> getMatchedContacts(BuildContext context) async {
 
     _showDebug(context, "Permission OK ✅");
 
-    // ✅ STEP 2: Get contacts (ONLY ONCE)
-    final contacts = await FlutterContacts.getContacts(
-      withProperties: true,
-      withThumbnail: false,
-    );
-
-    print("Contacts fetched: ${contacts.length}");
+    // ✅ v1 contacts
+    final contacts = await FlutterContacts.getContacts(withProperties: true);
 
     List<String> numbersToSend = [];
 
@@ -225,12 +220,13 @@ Future<List<SyncedContact>> getMatchedContacts(BuildContext context) async {
       }
     }
 
+    numbersToSend = numbersToSend.toSet().toList();
+
     if (numbersToSend.isEmpty) {
       _showDebug(context, "No numbers found");
       return [];
     }
 
-    // ✅ STEP 3: Send to backend
     final response = await api.client.post(syncContactsUrl, data: {
       "contacts": numbersToSend
     });
@@ -242,12 +238,11 @@ Future<List<SyncedContact>> getMatchedContacts(BuildContext context) async {
         id: json["id"].toString(),
         userName: json["userName"],
         phoneNumber: json["phoneNumber"],
-        currentUserPhone: currentUser!.phoneNumber,
+        currentUserPhone: currentUser?.phoneNumber ?? "",
       )).toList();
     }
 
   } catch (e) {
-    print("FULL ERROR: $e");
     _showDebug(context, "Error: $e");
   }
 
