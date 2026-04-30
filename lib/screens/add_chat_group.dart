@@ -250,7 +250,7 @@ class _SelectParticipantsPageState extends State<SelectParticipantsPage> {
   // --- FIX 2: Passed context here too ---
   void _loadData() async {
   var synced = await getMatchedContacts(context);
-  var localUsers = await getAllUsers();
+  var localUsers = await getUser();
 
   List<SyncedContact> localContacts = localUsers.map((user) => SyncedContact(
         id: user.id,
