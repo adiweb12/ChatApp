@@ -195,17 +195,26 @@ Future<void> dropDownLogic(String value, BuildContext context) async {
 String clean(String phone) => phone.replaceAll(RegExp(r'\D'), '');
 
 Future<List<SyncedContact>> getMatchedContacts() async {
-  if (currentUser == null) return []; // Guard clause
+  if (currentUser == null) return [];
 
   if (await FlutterContacts.requestPermission()) {
+    // 1. Get raw contacts
     final phoneContacts = await FlutterContacts.getContacts(withProperties: true);
     
+    // 2. Extract and clean numbers
     List<String> numbersToSend = [];
     for (var contact in phoneContacts) {
       for (var phone in contact.phones) {
-        numbersToSend.add(clean(phone.number));
+        String cleaned = clean(phone.number);
+        if (cleaned.isNotEmpty) {
+          numbersToSend.add(cleaned);
+        }
       }
     }
+
+    // DEBUG: Print this to see if you are actually getting numbers from the phone
+    print("Numbers found on phone: ${numbersToSend.length}");
+    print("Sample number: ${numbersToSend.isNotEmpty ? numbersToSend[0] : 'None'}");
 
     try {
       final response = await api.client.post('/sync-contacts', data: {
@@ -215,20 +224,25 @@ Future<List<SyncedContact>> getMatchedContacts() async {
       if (response.statusCode == 200) {
         List data = response.data["matched_users"];
         
-        // FIX 1 & 2: Added currentUserPhone and casted the list to <SyncedContact>
+        // DEBUG: See what the server returned
+        print("Server matched ${data.length} users");
+
         return data.map<SyncedContact>((json) => SyncedContact(
           id: json["id"].toString(),
           userName: json["userName"],
           phoneNumber: json["phoneNumber"],
-          currentUserPhone: currentUser!.phoneNumber, // Added required parameter
+          currentUserPhone: currentUser!.phoneNumber,
         )).toList();
       }
     } catch (e) {
       print("Sync Error: $e");
     }
+  } else {
+    print("Contact Permission Denied");
   }
   return [];
 }
+
 
 //________Search____User____By____Number
 Future<SyncedContact?> findUserByNumber(String input) async {
