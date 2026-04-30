@@ -37,6 +37,19 @@ class DBmaker {
             PRIMARY KEY (id, currentUserPhone) 
           )
         ''');
+        
+        //===TABLE 3 MESSAGES======
+        await db.execute('''
+            CREATE TABLE messages (
+            id TEXT PRIMARY KEY,
+            sender TEXT,
+            receiver TEXT,
+            message TEXT,
+            time TEXT,
+            type TEXT
+            )
+        ''');
+    
       },
     );
   }
