@@ -193,32 +193,46 @@ Future<void> dropDownLogic(String value, BuildContext context) async {
 //________Contact_____Sync______Logic
 // Helper for cleaning numbers
 String clean(String phone) => phone.replaceAll(RegExp(r'\D'), '');
-
 Future<List<SyncedContact>> getMatchedContacts(BuildContext context) async {
   try {
-    // 1. Check Permission
-    if (!await FlutterContacts.requestPermission()) {
-      _showDebug(context, "Permission Denied");
+    // ✅ STEP 1: Check existing permission
+    bool permission = await FlutterContacts.hasPermission();
+
+    print("Before request: $permission");
+
+    // ✅ STEP 2: Request only if needed
+    if (!permission) {
+      permission = await FlutterContacts.requestPermission();
+      print("After request: $permission");
+    }
+
+    // ❗ FINAL CHECK
+    if (!permission) {
+      _showDebug(context, "Permission Denied ❌");
       return [];
     }
 
-    final phoneContacts = await FlutterContacts.getContacts(withProperties: true);
+    _showDebug(context, "Permission OK ✅");
+
+    final contacts = await FlutterContacts.getContacts(withProperties: true);
+
+    print("Contacts fetched: ${contacts.length}");
+
     List<String> numbersToSend = [];
 
-    for (var contact in phoneContacts) {
+    for (var contact in contacts) {
       for (var phone in contact.phones) {
         String cleaned = phone.number.replaceAll(RegExp(r'\D'), '');
-        if (cleaned.length >= 10) numbersToSend.add(cleaned);
+        if (cleaned.length >= 10) {
+          numbersToSend.add(cleaned);
+        }
       }
     }
 
     if (numbersToSend.isEmpty) {
-      _showDebug(context, "No numbers found in phonebook");
+      _showDebug(context, "No numbers found");
       return [];
     }
-
-    // 2. Alert before sending
-    _showDebug(context, "Sending ${numbersToSend.length} numbers to server...");
 
     final response = await api.client.post('/sync-contacts', data: {
       "contacts": numbersToSend
@@ -226,7 +240,6 @@ Future<List<SyncedContact>> getMatchedContacts(BuildContext context) async {
 
     if (response.statusCode == 200) {
       List data = response.data["matched_users"];
-      _showDebug(context, "Server matched: ${data.length} users");
 
       return data.map<SyncedContact>((json) => SyncedContact(
         id: json["id"].toString(),
@@ -235,11 +248,15 @@ Future<List<SyncedContact>> getMatchedContacts(BuildContext context) async {
         currentUserPhone: currentUser!.phoneNumber,
       )).toList();
     }
+
   } catch (e) {
+    print("FULL ERROR: $e");
     _showDebug(context, "Error: $e");
   }
+
   return [];
 }
+
 
 // Simple helper to see logs on your screen
 void _showDebug(BuildContext context, String msg) {
