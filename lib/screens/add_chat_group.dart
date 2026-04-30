@@ -247,10 +247,28 @@ class _SelectParticipantsPageState extends State<SelectParticipantsPage> {
     _loadData();
   }
 
+  Future<List<UserDetails>> getAllUsers() async {
+  final dbClient = await dbMaker.db;
+
+  final List<Map<String, dynamic>> maps =
+      await dbClient.query("UserData");
+
+  return List.generate(maps.length, (i) {
+    return UserDetails(
+      id: maps[i]['id'],
+      userName: maps[i]['userName'],
+      email: maps[i]['email'],
+      phoneNumber: maps[i]['phoneNumber'],
+      password: maps[i]['password'],
+      dob: maps[i]['dob'],
+    );
+  });
+}
+
   // --- FIX 2: Passed context here too ---
   void _loadData() async {
   var synced = await getMatchedContacts(context);
-  var localUsers = await getUser();
+  var localUsers = await getAllUsers();
 
   List<SyncedContact> localContacts = localUsers.map((user) => SyncedContact(
         id: user.id,
