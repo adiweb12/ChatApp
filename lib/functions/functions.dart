@@ -191,51 +191,43 @@ Future<void> dropDownLogic(String value, BuildContext context) async {
 }
 
 //________Contact_____Sync______Logic
+// Simple function to clean numbers: removes +, -, and spaces
+String clean(String phone) => phone.replaceAll(RegExp(r'\D'), '');
+
 Future<List<SyncedContact>> getMatchedContacts() async {
-  if (currentUser == null) return [];
-
   if (await FlutterContacts.requestPermission()) {
-    final contacts =
-        await FlutterContacts.getContacts(withProperties: true);
-
-    Set<String> hashedNumbers = {};
-
-    for (var contact in contacts) {
+    // 1. Get raw contacts from phone
+    final phoneContacts = await FlutterContacts.getContacts(withProperties: true);
+    
+    // 2. Extract and clean numbers
+    List<String> numbersToSend = [];
+    for (var contact in phoneContacts) {
       for (var phone in contact.phones) {
-        hashedNumbers.add(normalizeAndHash(phone.number));
+        numbersToSend.add(clean(phone.number));
       }
     }
 
+    // 3. Ask server: "Who has an account?"
     try {
-      final response = await api.client.post(syncContactsUrl, data: {
-        "contacts": hashedNumbers.toList(),
+      final response = await api.client.post('/sync-contacts', data: {
+        "contacts": numbersToSend
       });
 
       if (response.statusCode == 200) {
         List data = response.data["matched_users"];
-        List<SyncedContact> list = [];
-
-        for (var json in data) {
-          final c = SyncedContact(
-            id: json["id"].toString(),
-            currentUserPhone: currentUser!.phoneNumber,
-            userName: json["userName"],
-            phoneNumber: json["phoneNumber"],
-          );
-
-          await insertSyncedContact(c);
-          list.add(c);
-        }
-
-        return list;
+        return data.map((json) => SyncedContact(
+          id: json["id"].toString(),
+          userName: json["userName"],
+          phoneNumber: json["phoneNumber"],
+        )).toList();
       }
     } catch (e) {
-      print("Sync error: $e");
+      print("Sync Error: $e");
     }
   }
-
-  return await getLocalSyncedContacts(currentUser!.phoneNumber);
+  return [];
 }
+
 //________Create_____Group______Logic
 Future<String?> createGroupLogic(String groupName, List<String> memberIds) async {
   try {
@@ -254,38 +246,25 @@ Future<String?> createGroupLogic(String groupName, List<String> memberIds) async
 }
 
 //________Search____User____By____Number
-Future<SyncedContact?> findUserByNumber(String phoneNumber) async {
-  if (currentUser == null) return null;
-
+Future<SyncedContact?> findUserByNumber(String input) async {
   try {
-    final hashed = normalizeAndHash(phoneNumber);
-
-    // Make sure 'findUserUrl' matches the variable name in api_urls.dart
-    final response = await api.client.post(findUserUrl, data: {
-      "contacts": [hashed],
+    final response = await api.client.post('/sync-contacts', data: {
+      "contacts": [clean(input)] // Reuse the sync logic
     });
 
     if (response.statusCode == 200) {
-      // The backend now returns { "matched_users": [...] }
       List data = response.data["matched_users"];
-
       if (data.isNotEmpty) {
         var json = data[0];
-
-        final contact = SyncedContact(
+        return SyncedContact(
           id: json["id"].toString(),
-          currentUserPhone: currentUser!.phoneNumber,
           userName: json["userName"],
           phoneNumber: json["phoneNumber"],
         );
-
-        await insertSyncedContact(contact);
-        return contact;
       }
     }
   } catch (e) {
     print("Find error: $e");
   }
-
   return null;
 }
