@@ -43,6 +43,24 @@ Future<UserDetails?> getUser(String email, String password) async {
   return null;
 }
 
+Future<List<UserDetails>> getAllUsers() async {
+  final dbClient = await dbMaker.db;
+
+  final List<Map<String, dynamic>> maps =
+      await dbClient.query("UserData");
+
+  return List.generate(maps.length, (i) {
+    return UserDetails(
+      id: maps[i]['id'],
+      userName: maps[i]['userName'],
+      email: maps[i]['email'],
+      phoneNumber: maps[i]['phoneNumber'],
+      password: maps[i]['password'],
+      dob: maps[i]['dob'],
+    );
+  });
+}
+
 Future<bool> updatePassDataBase(String email, String newPassword) async {
   try {
     final dbClient = await dbMaker.db;
