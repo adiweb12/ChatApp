@@ -26,66 +26,118 @@ void initState() {
 
   // --- FIX 1: Passed context here ---
   void _loadMatchedContacts() async {
-    var users = await getMatchedContacts(context);
-    if (mounted) {
-      setState(() {
-        matchedContacts = users;
-        isLoading = false;
-      });
-    }
+  var synced = await getMatchedContacts(context);
+
+  // 👇 Local DB users
+  var localUsers = await getAllUsers();
+
+  List<SyncedContact> localContacts = localUsers.map((user) => SyncedContact(
+    id: user.id,
+    userName: user.userName,
+    phoneNumber: user.phoneNumber,
+    currentUserPhone: currentUser?.phoneNumber ?? "",
+  )).toList();
+
+  // ✅ Merge without duplicates
+  final Map<String, SyncedContact> uniqueMap = {};
+
+  for (var c in synced) {
+    uniqueMap[c.phoneNumber] = c;
   }
 
-  void _showAddByNumberDialog() {
-    final controller = TextEditingController();
-    bool searching = false;
+  for (var c in localContacts) {
+    uniqueMap[c.phoneNumber] = c;
+  }
 
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          return AlertDialog(
-            title: const Text("Enter Phone Number"),
-            content: TextField(
-              controller: controller,
-              keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(
-                hintText: "e.g. 9876543210", 
-                prefixIcon: Icon(Icons.phone)
-              ),
+  if (mounted) {
+    setState(() {
+      matchedContacts = uniqueMap.values.toList();
+      isLoading = false;
+    });
+  }
+}
+
+ void _showAddByNumberDialog() {
+  final controller = TextEditingController();
+  bool searching = false;
+
+  showDialog(
+    context: context,
+    builder: (context) => StatefulBuilder(
+      builder: (context, setDialogState) {
+        return AlertDialog(
+          title: const Text("Enter Phone Number"),
+          content: TextField(
+            controller: controller,
+            keyboardType: TextInputType.phone,
+            decoration: const InputDecoration(
+              hintText: "e.g. 9876543210",
+              prefixIcon: Icon(Icons.phone),
             ),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(context), child: const Text("CANCEL")),
-              ElevatedButton(
-                onPressed: searching ? null : () async {
-                  if (controller.text.isEmpty) return;
-                  setDialogState(() => searching = true);
-                  SyncedContact? result = await findUserByNumber(controller.text);
-                  setDialogState(() => searching = false);
-                  
-                  if (result != null) {
-                    Navigator.pop(context);
-                    Navigator.push(context, MaterialPageRoute(
-                      builder: (context) => ChatPage(
-                        receiverPhone: result.phoneNumber, 
-                        receiverName: result.userName
-                      )
-                    ));
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("User not found"))
-                    );
-                  }
-                },
-                child: searching 
-                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2)) 
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("CANCEL"),
+            ),
+            ElevatedButton(
+              onPressed: searching
+                  ? null
+                  : () async {
+                      if (controller.text.isEmpty) return;
+
+                      setDialogState(() => searching = true);
+
+                      SyncedContact? result =
+                          await findUserByNumber(controller.text);
+
+                      setDialogState(() => searching = false);
+
+                      if (result != null) {
+                        // ✅ SAVE USER LOCALLY
+                        await insertUser(UserDetails(
+                          id: result.id,
+                          userName: result.userName,
+                          email: "",
+                          phoneNumber: result.phoneNumber,
+                          password: "",
+                          dob: "",
+                        ));
+
+                        Navigator.pop(context);
+
+                        // 🔥 REFRESH CONTACT LIST
+                        _loadMatchedContacts();
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ChatPage(
+                              receiverPhone: result.phoneNumber,
+                              receiverName: result.userName,
+                            ),
+                          ),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("User not found")),
+                        );
+                      }
+                    },
+              child: searching
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
                   : const Text("FIND"),
-              ),
-            ],
-          );
-        }
-      ),
-    );
-  }
+            ),
+          ],
+        );
+      },
+    ),
+  );
+} 
 
   @override
   Widget build(BuildContext context) {
@@ -196,14 +248,33 @@ class _SelectParticipantsPageState extends State<SelectParticipantsPage> {
 
   // --- FIX 2: Passed context here too ---
   void _loadData() async {
-    var list = await getMatchedContacts(context); 
-    if (mounted) {
-      setState(() {
-        contacts = list;
-        isLoading = false;
-      });
-    }
+  var synced = await getMatchedContacts(context);
+  var localUsers = await getAllUsers();
+
+  List<SyncedContact> localContacts = localUsers.map((user) => SyncedContact(
+        id: user.id,
+        userName: user.userName,
+        phoneNumber: user.phoneNumber,
+        currentUserPhone: currentUser?.phoneNumber ?? "",
+      )).toList();
+
+  final Map<String, SyncedContact> uniqueMap = {};
+
+  for (var c in synced) {
+    uniqueMap[c.phoneNumber] = c;
   }
+
+  for (var c in localContacts) {
+    uniqueMap[c.phoneNumber] = c;
+  }
+
+  if (mounted) {
+    setState(() {
+      contacts = uniqueMap.values.toList();
+      isLoading = false;
+    });
+  }
+}
 
   @override
   Widget build(BuildContext context) {
