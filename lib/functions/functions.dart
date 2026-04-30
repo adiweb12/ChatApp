@@ -248,7 +248,7 @@ Future<SyncedContact?> findUserByNumber(String input) async {
   if (currentUser == null) return null;
 
   try {
-    final response = await api.client.post('/sync-contacts', data: {
+    final response = await api.client.post('$findUserUrl', data: {
       "contacts": [clean(input)]
     });
 
