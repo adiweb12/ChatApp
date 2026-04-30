@@ -3,6 +3,9 @@ import 'package:onechat/constant/api_urls.dart';
 import 'package:flutter/material.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:onechat/models/models.dart';
+import 'package:onechat/database/operations/database_operation.dart';
+import 'package:onechat/database/database_manager.dart';
+import 'package:onechat/models/models.dart';
 
 class ChatPage extends StatefulWidget {
   final String receiverPhone;
@@ -26,55 +29,90 @@ class _ChatPageState extends State<ChatPage> {
   List<Map<String, dynamic>> messages = [];
 
   @override
-  void initState() {
-    super.initState();
+void initState() {
+  super.initState();
+  _loadMessages();
 
-    channel = WebSocketChannel.connect(
-      Uri.parse("$webSocketIp"),
+  channel = WebSocketChannel.connect(Uri.parse(webSocketIp));
+
+  channel.sink.add(jsonEncode({
+    "type": "register",
+    "from": currentUser!.phoneNumber,
+  }));
+
+  channel.stream.listen((data) async {
+    final msg = jsonDecode(data);
+
+    Message newMsg = Message(
+      id: DateTime.now().toString(),
+      sender: msg["from"],
+      receiver: msg["to"],
+      message: msg["message"],
+      time: DateTime.now().toIso8601String(),
+      type: "text",
+      isMe: false,
     );
 
-    // Register user
-    channel.sink.add(jsonEncode({
-      "type": "register",
-      "from": currentUser!.phoneNumber,
-    }));
-
-    // Listen messages
-    channel.stream.listen((data) {
-      final msg = jsonDecode(data);
-
-      setState(() {
-        messages.insert(0, {
-          "text": msg["message"],
-          "isMe": msg["from"] == currentUser!.phoneNumber,
-          "time": TimeOfDay.now().format(context),
-        });
-      });
-    });
-  }
-
-  void sendMessage() {
-    if (controller.text.trim().isEmpty) return;
-
-    final msg = controller.text.trim();
-
-    channel.sink.add(jsonEncode({
-      "type": "message",
-      "from": currentUser!.phoneNumber,
-      "to": widget.receiverPhone,
-      "message": msg,
-    }));
+    await insertMessage(newMsg); // ✅ SAVE
 
     setState(() {
       messages.insert(0, {
-        "text": msg,
-        "isMe": true,
+        "text": newMsg.message,
+        "isMe": false,
         "time": TimeOfDay.now().format(context),
       });
     });
+  });
+}
 
-    controller.clear();
-  }
+void _loadMessages() async {
+  final msgs = await getMessages(
+    currentUser!.phoneNumber,
+    widget.receiverPhone,
+  );
+
+  setState(() {
+    messages = msgs.map((m) => {
+      "text": m.message,
+      "isMe": m.isMe,
+      "time": m.time,
+    }).toList();
+  });
+}
+  void sendMessage() async {
+  if (controller.text.trim().isEmpty) return;
+
+  final msgText = controller.text.trim();
+
+  Message msg = Message(
+    id: DateTime.now().toString(),
+    sender: currentUser!.phoneNumber,
+    receiver: widget.receiverPhone,
+    message: msgText,
+    time: DateTime.now().toIso8601String(),
+    type: "text",
+    isMe: true,
+  );
+
+  await insertMessage(msg); // ✅ SAVE
+
+  channel.sink.add(jsonEncode({
+    "type": "message",
+    "from": msg.sender,
+    "to": msg.receiver,
+    "message": msg.message,
+  }));
+
+  setState(() {
+    messages.insert(0, {
+      "text": msg.message,
+      "isMe": true,
+      "time": TimeOfDay.now().format(context),
+    });
+  });
+
+  controller.clear();
+}
 
   @override
   void dispose() {

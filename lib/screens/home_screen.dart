@@ -8,6 +8,7 @@ import 'package:onechat/functions/functions.dart';
 import 'package:onechat/screens/bottom_bar.dart';
 import 'package:onechat/screens/add_chat_group.dart';
 import 'package:onechat/screens/chat_page.dart';
+import 'package:onechat/constant/api_url.dart';
 
 class Starter extends StatelessWidget {
   const Starter({super.key});
@@ -38,22 +39,46 @@ class _HomeScreenState extends State<HomeScreen> {
   List<SyncedContact> activeChats = [];
   bool isListLoading = true;
 
-  @override
-  void initState() {
-    super.initState();
-    _loadActiveChats();
+@override
+void initState() {
+  super.initState();
+  _syncMessages(); // ✅ CALL IT
+  _loadActiveChats();
+}
+
+Future<void> _syncMessages() async {
+  final res = await api.client.get(
+    "$baseUrl/messages/${currentUser!.phoneNumber}"
+  );
+
+  for (var m in res.data) {
+    await insertMessage(Message(
+      id: m["id"],
+      sender: m["from"],
+      receiver: m["to"],
+      message: m["message"],
+      time: m["time"],
+      type: "text",
+      isMe: m["from"] == currentUser!.phoneNumber,
+    ));
   }
+}  
 
   // Fetches contacts from local SQLite that belong to current logged in user
   void _loadActiveChats() async {
-    if (currentUser != null) {
-      var chats = await getLocalSyncedContacts(currentUser!.phoneNumber);
-      setState(() {
-        activeChats = chats;
-        isListLoading = false;
-      });
-    }
-  }
+  final chats = await getChatList(currentUser!.phoneNumber);
+
+  setState(() {
+    activeChats = chats.map((c) => SyncedContact(
+      id: c["user"],
+      userName: c["user"], // you can map name from users table
+      phoneNumber: c["user"],
+      currentUserPhone: currentUser!.phoneNumber,
+    )).toList();
+
+    isListLoading = false;
+  });
+}
 
   @override
   Widget build(BuildContext context) {
