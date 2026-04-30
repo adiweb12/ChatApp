@@ -130,7 +130,7 @@ class _EditPassPageState extends State<EditPassPage> {
   bool _isLoading = false;
 
   Future<void> _handleUpdatePass() async {
-    if (emailController.text.isEmpty || passwordController.text.isEmpty) {
+    if (passwordController.text.isEmpty) {
       _showErrorSnackBar("Please fill all fields");
       return;
     }
