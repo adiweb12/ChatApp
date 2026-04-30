@@ -16,12 +16,11 @@ class EditMailPage extends StatefulWidget {
 }
 
 class _EditMailPageState extends State<EditMailPage> {
-  final phoneController = TextEditingController();
   final emailController = TextEditingController();
   bool _isLoading = false;
 
   Future<void> _handleUpdateMail() async {
-    if (phoneController.text.isEmpty || emailController.text.isEmpty) {
+    if (emailController.text.isEmpty) {
       _showSnackBar("Please fill all fields", Colors.orange);
       return;
     }
@@ -29,11 +28,9 @@ class _EditMailPageState extends State<EditMailPage> {
     setState(() => _isLoading = true);
 
     // Calling the function from functions.dart
-    String? errorMessage = await editMail(
-      phonenumber: phoneController.text,
-      newMail: emailController.text,
-      allUsers: [], // Assuming logic handles internal list
-    );
+String? errorMessage = await editMail(
+  newMail: emailController.text,
+);
 
     if (!mounted) return;
     setState(() => _isLoading = false);
