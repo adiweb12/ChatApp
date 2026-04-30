@@ -4,6 +4,7 @@ import 'package:onechat/models/models.dart';
 import 'package:onechat/database/operations/database_operation.dart';
 import 'package:onechat/screens/home_screen.dart';
 import 'package:onechat/screens/chat_page.dart'; 
+import 'package:onechat/database/operations/database_operation.dart';
 
 class AddChatGroupPage extends StatefulWidget {
   const AddChatGroupPage({super.key});
@@ -247,24 +248,7 @@ class _SelectParticipantsPageState extends State<SelectParticipantsPage> {
     _loadData();
   }
 
-  Future<List<UserDetails>> getAllUsers() async {
-  final dbClient = await dbMaker.db;
-
-  final List<Map<String, dynamic>> maps =
-      await dbClient.query("UserData");
-
-  return List.generate(maps.length, (i) {
-    return UserDetails(
-      id: maps[i]['id'],
-      userName: maps[i]['userName'],
-      email: maps[i]['email'],
-      phoneNumber: maps[i]['phoneNumber'],
-      password: maps[i]['password'],
-      dob: maps[i]['dob'],
-    );
-  });
-}
-
+  
   // --- FIX 2: Passed context here too ---
   void _loadData() async {
   var synced = await getMatchedContacts(context);
