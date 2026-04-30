@@ -130,4 +130,48 @@ Future<List<SyncedContact>> getLocalSyncedContacts(String currentUserPhone) asyn
   });
 }
 
+Future<void> insertMessage(Message msg) async {
+  final db = await getDatabase();
+  await db.insert("messages", msg.toMap());
+}
 
+Future<List<Message>> getMessages(String myPhone, String otherPhone) async {
+  final db = await getDatabase();
+
+  final result = await db.query(
+    "messages",
+    where: "(sender=? AND receiver=?) OR (sender=? AND receiver=?)",
+    whereArgs: [myPhone, otherPhone, otherPhone, myPhone],
+    orderBy: "time DESC",
+  );
+
+  return result.map((e) => Message(
+    id: e["id"] as String,
+    sender: e["sender"] as String,
+    receiver: e["receiver"] as String,
+    message: e["message"] as String,
+    time: e["time"] as String,
+    type: e["type"] as String,
+    isMe: e["sender"] == myPhone,
+  )).toList();
+}
+
+Future<List<Map<String, dynamic>>> getChatList(String myPhone) async {
+  final db = await getDatabase();
+
+  final result = await db.rawQuery("""
+    SELECT 
+  CASE 
+    WHEN sender = ? THEN receiver 
+    ELSE sender 
+  END as user,
+  message,
+  MAX(time) as lastTime
+FROM messages
+WHERE sender = ? OR receiver = ?
+GROUP BY user
+ORDER BY lastTime DESC
+  """, [myPhone, myPhone]);
+
+  return result;
+}
