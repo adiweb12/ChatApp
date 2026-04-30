@@ -196,22 +196,30 @@ String clean(String phone) => phone.replaceAll(RegExp(r'\D'), '');
 
 Future<List<SyncedContact>> getMatchedContacts(BuildContext context) async {
   try {
-    // 1. Request permission (this also checks if already granted)
-    // flutter_contacts uses requestPermission() which returns a bool
-    bool isGranted = await FlutterContacts.requestPermission();
+    // 1. Trigger the popup (we ignore the true/false it returns)
+    await FlutterContacts.requestPermission();
 
-    if (!isGranted) {
-      _showDebug(context, "Permission Denied ❌");
+    // 2. FORCE FETCH: Try to get contacts regardless of the status check
+    List<Contact> contacts = [];
+    try {
+      contacts = await FlutterContacts.getContacts(withProperties: true);
+    } catch (e) {
+      // This only runs if the OS actually blocks the request
+      _showDebug(context, "OS truly blocked access ❌");
       return [];
     }
 
-    // 2. Fetch contacts with properties (phones, names, etc.)
-    final contacts = await FlutterContacts.getContacts(withProperties: true);
+    // 3. Check if we actually got data
+    if (contacts.isEmpty) {
+      _showDebug(context, "No contacts found or still blocked 📭");
+      return [];
+    }
+
+    _showDebug(context, "Success! Found ${contacts.length} contacts.");
 
     List<String> numbersToSend = [];
     for (var contact in contacts) {
       for (var phone in contact.phones) {
-        // Clean the number to digits only
         String cleaned = phone.number.replaceAll(RegExp(r'\D'), '');
         if (cleaned.length >= 10) {
           numbersToSend.add(cleaned);
@@ -219,25 +227,13 @@ Future<List<SyncedContact>> getMatchedContacts(BuildContext context) async {
       }
     }
 
-    // Unique numbers only
-    numbersToSend = numbersToSend.toSet().toList();
-
-    if (numbersToSend.isEmpty) {
-      _showDebug(context, "No contacts found on device 📱");
-      return [];
-    }
-
-    _showDebug(context, "Syncing ${numbersToSend.length} numbers...");
-
-    // 3. Send to server
+    // 4. Send to Render
     final response = await api.client.post(syncContactsUrl, data: {
-      "contacts": numbersToSend
+      "contacts": numbersToSend.toSet().toList()
     });
 
     if (response.statusCode == 200) {
       List data = response.data["matched_users"];
-      _showDebug(context, "Matched ${data.length} users!");
-
       return data.map<SyncedContact>((json) => SyncedContact(
         id: json["id"].toString(),
         userName: json["userName"],
@@ -247,10 +243,8 @@ Future<List<SyncedContact>> getMatchedContacts(BuildContext context) async {
     }
 
   } catch (e) {
-    _showDebug(context, "Error: $e");
-    print("Sync Error: $e");
+    _showDebug(context, "System Error: $e");
   }
-
   return [];
 }
 
