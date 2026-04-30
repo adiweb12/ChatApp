@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:onechat/functions/functions.dart';
 import 'package:onechat/models/models.dart';
 import 'package:onechat/screens/home_screen.dart';
-import 'package:onechat/screens/chat_page.dart'; // Import the new chat page
+import 'package:onechat/screens/chat_page.dart'; 
 
 class AddChatGroupPage extends StatefulWidget {
   const AddChatGroupPage({super.key});
@@ -21,6 +21,17 @@ class _AddChatGroupPageState extends State<AddChatGroupPage> {
     _loadMatchedContacts();
   }
 
+  // --- FIX 1: Passed context here ---
+  void _loadMatchedContacts() async {
+    var users = await getMatchedContacts(context);
+    if (mounted) {
+      setState(() {
+        matchedContacts = users;
+        isLoading = false;
+      });
+    }
+  }
+
   void _showAddByNumberDialog() {
     final controller = TextEditingController();
     bool searching = false;
@@ -34,7 +45,10 @@ class _AddChatGroupPageState extends State<AddChatGroupPage> {
             content: TextField(
               controller: controller,
               keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(hintText: "e.g. 9876543210", prefixIcon: Icon(Icons.phone)),
+              decoration: const InputDecoration(
+                hintText: "e.g. 9876543210", 
+                prefixIcon: Icon(Icons.phone)
+              ),
             ),
             actions: [
               TextButton(onPressed: () => Navigator.pop(context), child: const Text("CANCEL")),
@@ -47,31 +61,27 @@ class _AddChatGroupPageState extends State<AddChatGroupPage> {
                   
                   if (result != null) {
                     Navigator.pop(context);
-                    // NAVIGATE TO CHAT
                     Navigator.push(context, MaterialPageRoute(
-                      builder: (context) => ChatPage(receiverPhone: result.phoneNumber, receiverName: result.userName)
+                      builder: (context) => ChatPage(
+                        receiverPhone: result.phoneNumber, 
+                        receiverName: result.userName
+                      )
                     ));
                   } else {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("User not found")));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("User not found"))
+                    );
                   }
                 },
-                child: searching ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Text("FIND"),
+                child: searching 
+                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2)) 
+                  : const Text("FIND"),
               ),
             ],
           );
         }
       ),
     );
-  }
-
-  void _loadMatchedContacts() async {
-    var users = await getMatchedContacts(context);
-    if (mounted) {
-      setState(() {
-        matchedContacts = users;
-        isLoading = false;
-      });
-    }
   }
 
   @override
@@ -100,11 +110,13 @@ class _AddChatGroupPageState extends State<AddChatGroupPage> {
                     itemBuilder: (context, index) {
                       final user = matchedContacts[index];
                       return ListTile(
-                        leading: CircleAvatar(backgroundColor: Colors.green, child: Text(user.userName[0].toUpperCase(), style: const TextStyle(color: Colors.white))),
+                        leading: CircleAvatar(
+                          backgroundColor: Colors.green, 
+                          child: Text(user.userName[0].toUpperCase(), style: const TextStyle(color: Colors.white))
+                        ),
                         title: Text(user.userName),
                         subtitle: Text(user.phoneNumber),
                         onTap: () {
-                          // NAVIGATE TO CHAT
                           Navigator.push(context, MaterialPageRoute(
                             builder: (context) => ChatPage(receiverPhone: user.phoneNumber, receiverName: user.userName)
                           ));
@@ -119,9 +131,7 @@ class _AddChatGroupPageState extends State<AddChatGroupPage> {
   }
 }
 
-// ... Keep your _buildAddContactHeader and SelectParticipantsPage as they were
-
-// Renamed to avoid conflict with the other _buildHeader
+// Header helper
 Widget _buildAddContactHeader(String title, BuildContext context) {
   return Container(
     height: 180,
@@ -161,6 +171,8 @@ Widget _buildAddContactHeader(String title, BuildContext context) {
     ),
   );
 }
+
+// --- SELECT PARTICIPANTS PAGE ---
 class SelectParticipantsPage extends StatefulWidget {
   const SelectParticipantsPage({super.key});
 
@@ -179,12 +191,15 @@ class _SelectParticipantsPageState extends State<SelectParticipantsPage> {
     _loadData();
   }
 
+  // --- FIX 2: Passed context here too ---
   void _loadData() async {
-    var list = await getMatchedContacts();
-    setState(() {
-      contacts = list;
-      isLoading = false;
-    });
+    var list = await getMatchedContacts(context); 
+    if (mounted) {
+      setState(() {
+        contacts = list;
+        isLoading = false;
+      });
+    }
   }
 
   @override
@@ -243,7 +258,7 @@ class _SelectParticipantsPageState extends State<SelectParticipantsPage> {
               String? err = await createGroupLogic(controller.text, selectedContacts.map((e) => e.id).toList());
               if (err == null) {
                 Navigator.pop(context); // Close dialog
-                Navigator.pop(context); // Back to home
+                Navigator.pop(context); // Back to AddChatGroupPage
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Group Created!")));
               }
             }, 
