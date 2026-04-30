@@ -191,15 +191,15 @@ Future<void> dropDownLogic(String value, BuildContext context) async {
 }
 
 //________Contact_____Sync______Logic
-// Simple function to clean numbers: removes +, -, and spaces
+// Helper for cleaning numbers
 String clean(String phone) => phone.replaceAll(RegExp(r'\D'), '');
 
 Future<List<SyncedContact>> getMatchedContacts() async {
+  if (currentUser == null) return []; // Guard clause
+
   if (await FlutterContacts.requestPermission()) {
-    // 1. Get raw contacts from phone
     final phoneContacts = await FlutterContacts.getContacts(withProperties: true);
     
-    // 2. Extract and clean numbers
     List<String> numbersToSend = [];
     for (var contact in phoneContacts) {
       for (var phone in contact.phones) {
@@ -207,7 +207,6 @@ Future<List<SyncedContact>> getMatchedContacts() async {
       }
     }
 
-    // 3. Ask server: "Who has an account?"
     try {
       final response = await api.client.post('/sync-contacts', data: {
         "contacts": numbersToSend
@@ -215,10 +214,13 @@ Future<List<SyncedContact>> getMatchedContacts() async {
 
       if (response.statusCode == 200) {
         List data = response.data["matched_users"];
-        return data.map((json) => SyncedContact(
+        
+        // FIX 1 & 2: Added currentUserPhone and casted the list to <SyncedContact>
+        return data.map<SyncedContact>((json) => SyncedContact(
           id: json["id"].toString(),
           userName: json["userName"],
           phoneNumber: json["phoneNumber"],
+          currentUserPhone: currentUser!.phoneNumber, // Added required parameter
         )).toList();
       }
     } catch (e) {
@@ -227,6 +229,36 @@ Future<List<SyncedContact>> getMatchedContacts() async {
   }
   return [];
 }
+
+//________Search____User____By____Number
+Future<SyncedContact?> findUserByNumber(String input) async {
+  if (currentUser == null) return null;
+
+  try {
+    final response = await api.client.post('/sync-contacts', data: {
+      "contacts": [clean(input)]
+    });
+
+    if (response.statusCode == 200) {
+      List data = response.data["matched_users"];
+      if (data.isNotEmpty) {
+        var json = data[0];
+        
+        // FIX 3: Added required parameter
+        return SyncedContact(
+          id: json["id"].toString(),
+          userName: json["userName"],
+          phoneNumber: json["phoneNumber"],
+          currentUserPhone: currentUser!.phoneNumber, // Added required parameter
+        );
+      }
+    }
+  } catch (e) {
+    print("Find error: $e");
+  }
+  return null;
+}
+
 
 //________Create_____Group______Logic
 Future<String?> createGroupLogic(String groupName, List<String> memberIds) async {
@@ -243,28 +275,4 @@ Future<String?> createGroupLogic(String groupName, List<String> memberIds) async
     return e.response?.data['error'] ?? "Failed to create group";
   }
   return "An error occurred";
-}
-
-//________Search____User____By____Number
-Future<SyncedContact?> findUserByNumber(String input) async {
-  try {
-    final response = await api.client.post('/sync-contacts', data: {
-      "contacts": [clean(input)] // Reuse the sync logic
-    });
-
-    if (response.statusCode == 200) {
-      List data = response.data["matched_users"];
-      if (data.isNotEmpty) {
-        var json = data[0];
-        return SyncedContact(
-          id: json["id"].toString(),
-          userName: json["userName"],
-          phoneNumber: json["phoneNumber"],
-        );
-      }
-    }
-  } catch (e) {
-    print("Find error: $e");
-  }
-  return null;
 }
