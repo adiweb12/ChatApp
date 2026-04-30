@@ -196,40 +196,29 @@ String clean(String phone) => phone.replaceAll(RegExp(r'\D'), '');
 
 Future<List<SyncedContact>> getMatchedContacts(BuildContext context) async {
   try {
-    // 1. Trigger the popup (we ignore the true/false it returns)
     await FlutterContacts.requestPermission();
+    
+    // Fetch only phone numbers to save memory/speed
+    final contacts = await FlutterContacts.getContacts(withProperties: true);
+    
+    // Use a Set to avoid sending the same number multiple times
+    Set<String> last10Numbers = {};
 
-    // 2. FORCE FETCH: Try to get contacts regardless of the status check
-    List<Contact> contacts = [];
-    try {
-      contacts = await FlutterContacts.getContacts(withProperties: true);
-    } catch (e) {
-      // This only runs if the OS actually blocks the request
-      _showDebug(context, "OS truly blocked access ❌");
-      return [];
-    }
-
-    // 3. Check if we actually got data
-    if (contacts.isEmpty) {
-      _showDebug(context, "No contacts found or still blocked 📭");
-      return [];
-    }
-
-    _showDebug(context, "Success! Found ${contacts.length} contacts.");
-
-    List<String> numbersToSend = [];
     for (var contact in contacts) {
       for (var phone in contact.phones) {
         String cleaned = phone.number.replaceAll(RegExp(r'\D'), '');
         if (cleaned.length >= 10) {
-          numbersToSend.add(cleaned);
+          // Extract only the last 10 digits
+          last10Numbers.add(cleaned.substring(cleaned.length - 10));
         }
       }
     }
 
-    // 4. Send to Render
+    if (last10Numbers.isEmpty) return [];
+
+    // Send the list to the server
     final response = await api.client.post(syncContactsUrl, data: {
-      "contacts": numbersToSend.toSet().toList()
+      "contacts": last10Numbers.toList()
     });
 
     if (response.statusCode == 200) {
@@ -241,9 +230,8 @@ Future<List<SyncedContact>> getMatchedContacts(BuildContext context) async {
         currentUserPhone: currentUser?.phoneNumber ?? "",
       )).toList();
     }
-
   } catch (e) {
-    _showDebug(context, "System Error: $e");
+    print("Sync error: $e");
   }
   return [];
 }
