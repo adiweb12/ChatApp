@@ -10,7 +10,7 @@ const updateEmailUrl = "$baseUrl/update-email";
 
 const updatePasswordUrl = "$baseUrl/update-password";
 
-const shshsj = "$baseUrl/sync-contacts";
+const syncContactsUrl = "$baseUrl/sync-contacts";
 
 const FindUserUrl = "$baseUrl/find-user";
 
