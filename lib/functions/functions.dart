@@ -147,34 +147,41 @@ Future<String?> loginLogic({
 
 //______update__password____logic____
 Future<String?> updatePassword({
-  required String email,
   required String newPassword,
-  required List<UserDetails> allUsers,
 }) async {
   try {
-    // 1. UPDATE SERVER
-    final response = await api.client.put(updatePasswordUrl, data: {
-      "email": email,
-      "newPassword": newPassword,
-    });
+    final token = await getToken();
+
+    final response = await api.client.put(
+      updatePasswordUrl,
+      data: {
+        "newPassword": newPassword,
+      },
+      options: Options(
+        headers: {
+          "Authorization": "Bearer $token",
+        },
+      ),
+    );
 
     if (response.statusCode == 200) {
-      // 2. UPDATE LOCAL SQLITE
-      bool localSuccess = await updatePassDataBase(email, newPassword);
-      
+      bool localSuccess = await updatePassDataBase(
+        currentUser!.email,
+        newPassword,
+      );
+
       if (localSuccess) {
-        // Since password changed, it's safer to clear session and make them re-login
-        await storage.deleteAll(); 
+        await storage.deleteAll(); // force re-login
         return null;
       }
     }
   } on DioException catch (e) {
-     return "Server Password Update Failed: ${e.response?.data['error']}";
-  } catch (e) {
-     return "Local Sync Error: $e";
+    return e.response?.data['error'] ?? "Server error";
   }
+
   return "Error";
 }
+
 //______dropDown_____logic___
 Future<void> dropDownLogic(String value, BuildContext context) async {
   switch (value) {
