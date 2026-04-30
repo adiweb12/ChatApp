@@ -258,13 +258,15 @@ Future<SyncedContact?> findUserByNumber(String phoneNumber) async {
   if (currentUser == null) return null;
 
   try {
-    final hashed = normalizeAndHash(phoneNumber); // ✅ FIX
+    final hashed = normalizeAndHash(phoneNumber);
 
-    final response = await api.client.post(FindUserUrl, data: {
+    // Make sure 'findUserUrl' matches the variable name in api_urls.dart
+    final response = await api.client.post(findUserUrl, data: {
       "contacts": [hashed],
     });
 
     if (response.statusCode == 200) {
+      // The backend now returns { "matched_users": [...] }
       List data = response.data["matched_users"];
 
       if (data.isNotEmpty) {
