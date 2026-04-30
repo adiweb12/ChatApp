@@ -67,38 +67,45 @@ Future<String?> signupLogic({
 
 //__________mail______edit____logic___
 Future<String?> editMail({
-  required String phonenumber,
   required String newMail,
-  required List<UserDetails> allUsers,
 }) async {
   try {
-    // 1. UPDATE SERVER
-    final response = await api.client.put(updateEmailUrl, data: {
-      "phoneNumber": phonenumber,
-      "newEmail": newMail,
-    });
+    final token = await getToken();
+
+    final response = await api.client.put(
+      updateEmailUrl,
+      data: {
+        "newEmail": newMail,
+      },
+      options: Options(
+        headers: {
+          "Authorization": "Bearer $token",
+        },
+      ),
+    );
 
     if (response.statusCode == 200) {
-      // 2. UPDATE LOCAL SQLITE
-      bool localSuccess = await updateEmailDataBase(phonenumber, newMail);
-      
+      bool localSuccess = await updateEmailDataBase(
+        currentUser!.phoneNumber,
+        newMail,
+      );
+
       if (localSuccess) {
-        // Optional: Update global currentUser object so the UI reflects changes immediately
-        if (currentUser != null) currentUser!.email = newMail;
-        
-             await storage.deleteAll(); 
-        
+        currentUser!.email = newMail;
+
+        // logout after change (good practice)
+        await storage.deleteAll();
+
         return null;
       }
     }
   } on DioException catch (e) {
-    return "Server Email Update Failed: ${e.response?.data['error']}";
-
-  } catch (e) {
-    return "Local Sync Error: $e";
+    return e.response?.data['error'] ?? "Server error";
   }
+
   return "Error";
 }
+
 //________login_______logic_______
 Future<String?> loginLogic({
   required String email,
