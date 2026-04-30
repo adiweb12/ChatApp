@@ -193,20 +193,12 @@ Future<void> dropDownLogic(String value, BuildContext context) async {
 //________Contact_____Sync______Logic
 // Helper for cleaning numbers
 String clean(String phone) => phone.replaceAll(RegExp(r'\D'), '');
+
 Future<List<SyncedContact>> getMatchedContacts(BuildContext context) async {
   try {
-    // ✅ STEP 1: Check existing permission
-    bool permission = await FlutterContacts.hasPermission();
+    // ✅ STEP 1: Request permission (v2 API)
+    bool permission = await FlutterContacts.requestPermission(readonly: true);
 
-    print("Before request: $permission");
-
-    // ✅ STEP 2: Request only if needed
-    if (!permission) {
-      permission = await FlutterContacts.requestPermission();
-      print("After request: $permission");
-    }
-
-    // ❗ FINAL CHECK
     if (!permission) {
       _showDebug(context, "Permission Denied ❌");
       return [];
@@ -214,7 +206,11 @@ Future<List<SyncedContact>> getMatchedContacts(BuildContext context) async {
 
     _showDebug(context, "Permission OK ✅");
 
-    final contacts = await FlutterContacts.getContacts(withProperties: true);
+    // ✅ STEP 2: Get contacts (ONLY ONCE)
+    final contacts = await FlutterContacts.getContacts(
+      withProperties: true,
+      withThumbnail: false,
+    );
 
     print("Contacts fetched: ${contacts.length}");
 
@@ -234,7 +230,8 @@ Future<List<SyncedContact>> getMatchedContacts(BuildContext context) async {
       return [];
     }
 
-    final response = await api.client.post('/sync-contacts', data: {
+    // ✅ STEP 3: Send to backend
+    final response = await api.client.post(syncContactsUrl, data: {
       "contacts": numbersToSend
     });
 
@@ -256,7 +253,6 @@ Future<List<SyncedContact>> getMatchedContacts(BuildContext context) async {
 
   return [];
 }
-
 
 // Simple helper to see logs on your screen
 void _showDebug(BuildContext context, String msg) {
