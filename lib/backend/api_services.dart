@@ -87,3 +87,6 @@ final api = ApiServices();
 const storage = FlutterSecureStorage(
   aOptions: AndroidOptions(encryptedSharedPreferences: true),
 );
+Future<String?> getToken() async {
+  return await storage.read(key: "access_token");
+}
