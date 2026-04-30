@@ -68,6 +68,7 @@ Future<String?> signupLogic({
 //__________mail______edit____logic___
 Future<String?> editMail({
   required String newMail,
+  required String phoneNumber,
 }) async {
   try {
     final token = await getToken();
@@ -155,6 +156,7 @@ Future<String?> loginLogic({
 //______update__password____logic____
 Future<String?> updatePassword({
   required String newPassword,
+  required String email
 }) async {
   try {
     final token = await getToken();
