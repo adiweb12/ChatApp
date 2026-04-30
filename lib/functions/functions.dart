@@ -194,54 +194,58 @@ Future<void> dropDownLogic(String value, BuildContext context) async {
 // Helper for cleaning numbers
 String clean(String phone) => phone.replaceAll(RegExp(r'\D'), '');
 
-Future<List<SyncedContact>> getMatchedContacts() async {
-  if (currentUser == null) return [];
+Future<List<SyncedContact>> getMatchedContacts(BuildContext context) async {
+  try {
+    // 1. Check Permission
+    if (!await FlutterContacts.requestPermission()) {
+      _showDebug(context, "Permission Denied");
+      return [];
+    }
 
-  if (await FlutterContacts.requestPermission()) {
-    // 1. Get raw contacts
     final phoneContacts = await FlutterContacts.getContacts(withProperties: true);
-    
-    // 2. Extract and clean numbers
     List<String> numbersToSend = [];
+
     for (var contact in phoneContacts) {
       for (var phone in contact.phones) {
-        String cleaned = clean(phone.number);
-        if (cleaned.isNotEmpty) {
-          numbersToSend.add(cleaned);
-        }
+        String cleaned = phone.number.replaceAll(RegExp(r'\D'), '');
+        if (cleaned.length >= 10) numbersToSend.add(cleaned);
       }
     }
 
-    // DEBUG: Print this to see if you are actually getting numbers from the phone
-    print("Numbers found on phone: ${numbersToSend.length}");
-    print("Sample number: ${numbersToSend.isNotEmpty ? numbersToSend[0] : 'None'}");
-
-    try {
-      final response = await api.client.post('/sync-contacts', data: {
-        "contacts": numbersToSend
-      });
-
-      if (response.statusCode == 200) {
-        List data = response.data["matched_users"];
-        
-        // DEBUG: See what the server returned
-        print("Server matched ${data.length} users");
-
-        return data.map<SyncedContact>((json) => SyncedContact(
-          id: json["id"].toString(),
-          userName: json["userName"],
-          phoneNumber: json["phoneNumber"],
-          currentUserPhone: currentUser!.phoneNumber,
-        )).toList();
-      }
-    } catch (e) {
-      print("Sync Error: $e");
+    if (numbersToSend.isEmpty) {
+      _showDebug(context, "No numbers found in phonebook");
+      return [];
     }
-  } else {
-    print("Contact Permission Denied");
+
+    // 2. Alert before sending
+    _showDebug(context, "Sending ${numbersToSend.length} numbers to server...");
+
+    final response = await api.client.post('/sync-contacts', data: {
+      "contacts": numbersToSend
+    });
+
+    if (response.statusCode == 200) {
+      List data = response.data["matched_users"];
+      _showDebug(context, "Server matched: ${data.length} users");
+
+      return data.map<SyncedContact>((json) => SyncedContact(
+        id: json["id"].toString(),
+        userName: json["userName"],
+        phoneNumber: json["phoneNumber"],
+        currentUserPhone: currentUser!.phoneNumber,
+      )).toList();
+    }
+  } catch (e) {
+    _showDebug(context, "Error: $e");
   }
   return [];
 }
+
+// Simple helper to see logs on your screen
+void _showDebug(BuildContext context, String msg) {
+  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+}
+
 
 
 //________Search____User____By____Number
