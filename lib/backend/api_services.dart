@@ -13,7 +13,7 @@ class ApiServices {
     _dio.options.connectTimeout = const Duration(seconds: 50); // Fixed typo
     _dio.options.receiveTimeout = const Duration(seconds: 50);
 
-    _dio.interceptors.add(InterceptorsWrapper(
+    api.client.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
         String? token = await _storage.read(key: "access_token");
         if (token != null) {
