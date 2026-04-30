@@ -79,16 +79,7 @@ String? errorMessage = await editMail(
                         style: TextStyle(color: Colors.grey, fontSize: 16),
                       ),
                       const SizedBox(height: 30),
-                      TextField(
-                        controller: phoneController,
-                        keyboardType: TextInputType.phone,
-                        decoration: InputDecoration(
-                          prefixIcon: const Icon(Icons.phone_outlined),
-                          labelText: 'Phone Number',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
+              
                       TextField(
                         controller: emailController,
                         keyboardType: TextInputType.emailAddress,
@@ -146,11 +137,9 @@ class _EditPassPageState extends State<EditPassPage> {
 
     setState(() => _isLoading = true);
 
-    String? errorMessage = await updatePassword(
-      email: emailController.text,
-      newPassword: passwordController.text,
-      allUsers: [], 
-    );
+String? errorMessage = await updatePassword(
+  newPassword: passwordController.text,
+);
 
     if (!mounted) return;
     setState(() => _isLoading = false);
@@ -200,15 +189,7 @@ class _EditPassPageState extends State<EditPassPage> {
                       ),
                       const Text("Secure your account", style: TextStyle(color: Colors.grey)),
                       const SizedBox(height: 30),
-                      TextField(
-                        controller: emailController,
-                        decoration: InputDecoration(
-                          prefixIcon: const Icon(Icons.email_outlined),
-                          labelText: 'Email',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
+                      
                       TextField(
                         controller: passwordController,
                         obscureText: _obscure,
