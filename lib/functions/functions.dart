@@ -260,7 +260,7 @@ Future<SyncedContact?> findUserByNumber(String phoneNumber) async {
   try {
     final hashed = normalizeAndHash(phoneNumber); // ✅ FIX
 
-    final response = await api.client.post(syncContactsUrl, data: {
+    final response = await api.client.post(FindUserUrl, data: {
       "contacts": [hashed],
     });
 
