@@ -56,7 +56,7 @@ Future<void> _init() async {
   WSService().onMessageReceived = (msg) {
     _loadActiveChats(); // refresh UI
   };
-
+ await syncChatsFromServer();  
   await _loadActiveChats();
 }
 
