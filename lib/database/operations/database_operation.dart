@@ -1,6 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:onechat/database/database_manager.dart';
 import 'package:onechat/models/models.dart';
+import 'package:onechat/screens/chat_page.dart';
 
 Future<bool> insertUser(UserDetails user) async {
   try {
@@ -171,7 +172,7 @@ Future<bool> addNewChat(ChatList ctl) async {
       {
         'id': ctl.id, 
         'currentUserPhone': currentUser!.phoneNumber,
-        'receiverName': ctl.receiverName,
+        'receiverName':senderName,
         'receiverNum': ctl.receiverNum,
         'lastMessage': ctl.lastMessage,
         'time': ctl.time,
