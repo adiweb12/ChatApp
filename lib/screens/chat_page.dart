@@ -72,7 +72,7 @@ void initState() {
       "isMe": false,
       "time": TimeOfDay.fromDateTime(
   DateTime.parse(newMsg.time),
-).format(context),,
+).format(context),
     });
   });
 });
