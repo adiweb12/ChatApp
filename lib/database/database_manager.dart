@@ -30,7 +30,7 @@ class DBmaker {
         // Table 2: Synced Contacts (Linked to current user)
         await db.execute('''
           CREATE TABLE synedContacts(
-            id TEXT PRIMARY KEY,
+            id TEXT,
             currentUserPhone TEXT, 
             userName TEXT,
             phoneNumber TEXT,
