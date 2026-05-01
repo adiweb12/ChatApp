@@ -64,17 +64,15 @@ class _ChatPageState extends State<ChatPage> {
 
     final text = controller.text.trim();
     controller.clear();
-    final senderName = jsonData["senderName"] ?? jsonData["from"];
-
-  Message msg = Message(
-    id: jsonData["id"],
-    sender: jsonData["from"],
-    receiver: jsonData["to"],
-    message: jsonData["message"],
-    time: jsonData["time"],
-    type: "text",
-    isMe: false,
-  );
+   final msg = Message(
+  id: const Uuid().v4(),
+  sender: currentUser!.phoneNumber,
+  receiver: widget.receiverPhone,
+  message: text,
+  time: DateTime.now().toIso8601String(),
+  type: "text",
+  isMe: true,
+); 
     // UI update
     setState(() {
       messages.insert(0, msg);
