@@ -19,3 +19,19 @@ Future<void> chatLoader() async {
 
   WSService().connect(currentUser!.phoneNumber);
 }
+
+Future<void> syncChatsFromServer() async {
+  final response = await api.client.get(
+    "/chat-list/${currentUser!.phoneNumber}",
+  );
+
+  for (var c in response.data) {
+    await addNewChat(ChatList(
+      id: c["id"],
+      receiverName: c["receiverName"],
+      receiverNum: c["receiverNum"],
+      lastMessage: c["lastMessage"],
+      time: c["time"],
+    ));
+  }
+}
