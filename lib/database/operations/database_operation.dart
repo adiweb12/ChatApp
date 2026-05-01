@@ -161,34 +161,39 @@ Future<List<Message>> getMessages(String myPhone, String otherPhone) async {
   )).toList();
 }
 
-Future<List<Map<String, dynamic>>> getChatList(String myPhone) async {
-  final dbClient = await dbMaker.db;
-
-  final result = await dbClient.rawQuery("""
-    SELECT 
-      CASE WHEN m.sender = ? THEN m.receiver ELSE m.sender END as chatUser,
-      sc.userName as syncedName,
-      m.message,
-      m.time
-    FROM messages m
-    LEFT JOIN synedContacts sc ON sc.phoneNumber = 
-      (CASE WHEN m.sender = ? THEN m.receiver ELSE m.sender END)
-    WHERE m.sender = ? OR m.receiver = ?
-    GROUP BY chatUser
-    ORDER BY m.time DESC
-  """, [myPhone, myPhone, myPhone, myPhone]);
-
-  return result.map((e) {
-    return {
-      "user": e["chatUser"],
-      "name": e["syncedName"] ?? _formatPhoneNumber(e["chatUser"].toString()), 
-      "message": e["message"],
-    };
-  }).toList();
+Future<bool> addNewChat(ChatList ctl) async {
+  try {
+    final dbClient = await dbMaker.db; // Use the instance
+    await dbClient.insert(
+      "chatList",
+      {
+        'id': ctl.id, // Fixed: Added quotes
+        'receiverName': ctl.receiverName,
+        'receiverNum': ctl.receiverNum,
+        'lastMessage': ctl.lastMessage,
+        'time': ctl.time,
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+    return true; // Added missing return
+  } catch (e) {
+    return false;
+  }
 }
 
-// Helper to make raw numbers look cleaner if no name exists
-String _formatPhoneNumber(String phone) {
-  if (phone.length > 10) return "+${phone.substring(0, 2)} ${phone.substring(2)}";
-  return phone;
+Future<List<ChatList>> getAllChats() async {
+  final dbClient = await dbMaker.db;
+
+  final List<Map<String, dynamic>> maps =
+      await dbClient.query("chatList");
+
+  return List.generate(maps.length, (i) {
+    return UserDetails(
+      id: maps[i]['id'],
+      receiverName: maps[i]['receiverName'],
+      receiverNum: maps[i]['receiverNum'],
+      lastMessage: maps[i]['lastMessage'],
+      time: maps[i]['time'],
+    );
+  });
 }

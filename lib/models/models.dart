@@ -61,6 +61,22 @@ class Message{
     }
 }
 
+class ChatList{
+    final String id; //Acts as unique id
+    final String receiverName;
+    final String receiverNum;
+    final String time;
+    final String lastMessage;
+    
+    ChatList({
+        required this.id,
+        required this.receiverName,
+        required this.receiverNum,
+        required this.time,
+        required this.lastMessage,
+    });
+}
+
 // Global list for demo purposes
 List<UserDetails> globalUserList = [];
 

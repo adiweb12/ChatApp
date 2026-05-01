@@ -11,6 +11,7 @@ import 'package:onechat/screens/chat_page.dart';
 import 'package:onechat/constant/api_urls.dart';
 import 'package:onechat/backend/api_services.dart';
 import 'package:dio/dio.dart';
+import 'package:onechat/backend/ws_services.dart';
 
 class Starter extends StatelessWidget {
   const Starter({super.key});
@@ -48,73 +49,30 @@ void initState() {
 }
 
 Future<void> _init() async {
-  await _syncMessages(); // ✅ wait
-  _loadActiveChats();    // ✅ then load
+  await chatLoader();
+
+  // Listen for real-time updates
+  WSService().onMessageReceived = (msg) {
+    _loadActiveChats(); // refresh UI
+  };
+
+  await _loadActiveChats();
 }
 
-Future<Message?> getMessageById(String id) async {
-  final dbClient = await dbMaker.db;
-
-  final result = await dbClient.query(
-    "messages",
-    where: "id = ?",
-    whereArgs: [id],
-  );
-
-  if (result.isEmpty) return null;
-
-  final e = result.first;
-
-  return Message(
-    id: e["id"] as String,
-    sender: e["sender"] as String,
-    receiver: e["receiver"] as String,
-    message: e["message"] as String,
-    time: e["time"] as String,
-    type: e["type"] as String,
-    isMe: false,
-  );
-}
-
-Future<void> _syncMessages() async {
-  final res = await api.client.get(
-    "$baseUrl/messages/${currentUser!.phoneNumber}"
-  );
-
-  for (var m in res.data) {
-    // ❗ check if already exists
-    final existing = await getMessageById(m["id"]);
-
-    if (existing != null) continue;
-
-    await insertMessage(Message(
-      id: m["id"],
-      sender: m["from"],
-      receiver: m["to"],
-      message: m["message"],
-      time: m["time"],
-      type: "text",
-      isMe: m["from"] == currentUser!.phoneNumber,
-    ));
-  }
-}
-  // Fetches contacts from local SQLite that belong to current logged in user
-  // Inside _HomeScreenState
-void _loadActiveChats() async {
-  final chats = await getChatList(currentUser!.phoneNumber);
-  if (!mounted) return;
+Future<void> _loadActiveChats() async {
+  final chats = await getAllChats();
 
   setState(() {
     activeChats = chats.map((c) => SyncedContact(
-      id: c["user"],
-      userName: c["name"], // This now properly uses the fallback from SQL
-      phoneNumber: c["user"],
+      id: c.id,
       currentUserPhone: currentUser!.phoneNumber,
+      userName: c.receiverName,
+      phoneNumber: c.receiverNum,
     )).toList();
+
     isListLoading = false;
   });
 }
-
 
   @override
   Widget build(BuildContext context) {

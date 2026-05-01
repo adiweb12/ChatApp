@@ -8,7 +8,6 @@ import 'package:onechat/database/database_manager.dart';
 import 'package:onechat/models/models.dart';
 import 'package:uuid/uuid.dart';
 
-final uuid = Uuid();
 
 class ChatPage extends StatefulWidget {
   final String receiverPhone;
@@ -25,162 +24,178 @@ class ChatPage extends StatefulWidget {
 }
 
 class _ChatPageState extends State<ChatPage> {
-    
   final TextEditingController controller = TextEditingController();
   final ScrollController scrollController = ScrollController();
 
-  List<Map<String, dynamic>> messages = [];
-  
-  late WebSocketChannel channel;
-bool isConnected = false;
-
-@override
-void initState() {
-  super.initState();
-  _loadMessages();
-
-  // ✅ create ONLY ONCE
-  channel = WebSocketChannel.connect(Uri.parse(webSocketIp));
-
-  channel.sink.add(jsonEncode({
-    "type": "register",
-    "from": currentUser!.phoneNumber,
-  }));
-  channel.stream.listen((data) async {
-  if (!mounted) return;
-
-  final msg = jsonDecode(data);
-  if (msg["from"] == currentUser!.phoneNumber) return;
-
-  // ✅ Define the missing newMsg variable here
-  Message newMsg = Message(
-    id: msg["id"] ?? const Uuid().v4(),
-    sender: msg["from"],
-    receiver: msg["to"],
-    message: msg["message"],
-    time: msg["time"] ?? DateTime.now().toIso8601String(),
-    type: "text",
-    isMe: false,
-  );
-
-  await insertMessage(newMsg);
-
-  if (mounted) {
-    setState(() {
-      messages.insert(0, {
-        "text": newMsg.message,
-        "isMe": false,
-        "time": TimeOfDay.fromDateTime(
-          DateTime.parse(newMsg.time),
-        ).format(context),
-      });
-    });
-  }
-});
- 
-}
-
-void _loadMessages() async {
-  final msgs = await getMessages(
-    currentUser!.phoneNumber,
-    widget.receiverPhone,
-  );
-
-  setState(() {
-    messages = msgs.map((m) => {
-      "text": m.message,
-      "isMe": m.isMe,
-      "time": TimeOfDay.fromDateTime(DateTime.parse(m.time)).format(context),
-    }).toList();
-  });
-
-  await Future.delayed(const Duration(milliseconds: 100));
-  scrollController.jumpTo(0);
-}
- void sendMessage() async {
-  if (controller.text.trim().isEmpty) return;
-
-  final msgText = controller.text.trim();
-
-  Message msg = Message(
-    id: const Uuid().v4(),
-    sender: currentUser!.phoneNumber,
-    receiver: widget.receiverPhone,
-    message: msgText,
-    time: DateTime.now().toIso8601String(),
-    type: "text",
-    isMe: true,
-  );
-
-  controller.clear();
-
-// ✅ show instantly
-setState(() {
-  messages.insert(0, {
-    "text": msg.message,
-    "isMe": true,
-    "time": TimeOfDay.now().format(context),
-  });
-});
-
-// ✅ save
-await insertMessage(msg);
-
-// ✅ send
-channel.sink.add(jsonEncode({
-  "id": msg.id,
-  "type": "message",
-  "from": msg.sender,
-  "to": msg.receiver,
-  "message": msg.message,
-}));
-}
+  List<Message> messages = [];
 
   @override
-  void dispose() {
-    channel.sink.close();
-    controller.dispose();
-    scrollController.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    loadMessages();
+
+    // ✅ Real-time listener
+    WSService().onMessageReceived = (msg) {
+      if (msg.sender == widget.receiverPhone) {
+        setState(() {
+          messages.insert(0, msg);
+        });
+        _scrollToTop();
+      }
+    };
+  }
+
+  // ================= LOAD OLD =================
+  Future<void> loadMessages() async {
+    final data = await getMessages(
+      currentUser!.phoneNumber,
+      widget.receiverPhone,
+    );
+
+    setState(() {
+      messages = data;
+    });
+  }
+
+  // ================= SEND =================
+  void sendMessage() async {
+    if (controller.text.trim().isEmpty) return;
+
+    final text = controller.text.trim();
+    controller.clear();
+
+    final msg = Message(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      sender: currentUser!.phoneNumber,
+      receiver: widget.receiverPhone,
+      message: text,
+      time: DateTime.now().toIso8601String(),
+      type: "text",
+      isMe: true,
+    );
+
+    // UI update
+    setState(() {
+      messages.insert(0, msg);
+    });
+
+    _scrollToTop();
+
+    // DB
+    await insertMessage(msg);
+
+    await addNewChat(ChatList(
+      id: widget.receiverPhone,
+      receiverName: widget.receiverName,
+      receiverNum: widget.receiverPhone,
+      lastMessage: text,
+      time: msg.time,
+    ));
+
+    // WS
+    WSService().sendMessage(msg);
+  }
+
+  void _scrollToTop() {
+    Future.delayed(const Duration(milliseconds: 100), () {
+      scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    });
   }
 
   // ================= UI =================
 
-  Widget buildMessageBubble(Map<String, dynamic> msg) {
-    bool isMe = msg["isMe"];
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFECE5DD),
 
+      // ✅ TOP BAR
+      appBar: AppBar(
+        backgroundColor: Colors.green,
+        titleSpacing: 0,
+        title: Row(
+          children: [
+            CircleAvatar(
+              backgroundColor: Colors.white,
+              child: Text(widget.receiverName[0]),
+            ),
+            const SizedBox(width: 10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(widget.receiverName,
+                    style: const TextStyle(fontSize: 16)),
+                const Text("Online",
+                    style: TextStyle(fontSize: 12)),
+              ],
+            )
+          ],
+        ),
+      ),
+
+      body: Column(
+        children: [
+          // ✅ MESSAGE LIST
+          Expanded(
+            child: ListView.builder(
+              controller: scrollController,
+              reverse: true,
+              itemCount: messages.length,
+              itemBuilder: (context, index) {
+                return buildMessageBubble(messages[index]);
+              },
+            ),
+          ),
+
+          // ✅ INPUT BAR
+          buildInputBar(),
+        ],
+      ),
+    );
+  }
+
+  // ================= MESSAGE UI =================
+  Widget buildMessageBubble(Message msg) {
     return Align(
-      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+      alignment:
+          msg.isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         constraints: const BoxConstraints(maxWidth: 280),
         margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isMe ? Colors.green : Colors.grey.shade200,
+          color: msg.isMe ? Colors.green : Colors.grey.shade200,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16),
             topRight: const Radius.circular(16),
-            bottomLeft: isMe ? const Radius.circular(16) : Radius.zero,
-            bottomRight: isMe ? Radius.zero : const Radius.circular(16),
+            bottomLeft:
+                msg.isMe ? const Radius.circular(16) : Radius.zero,
+            bottomRight:
+                msg.isMe ? Radius.zero : const Radius.circular(16),
           ),
         ),
         child: Column(
-          crossAxisAlignment:
-              isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          crossAxisAlignment: msg.isMe
+              ? CrossAxisAlignment.end
+              : CrossAxisAlignment.start,
           children: [
             Text(
-              msg["text"],
+              msg.message,
               style: TextStyle(
-                color: isMe ? Colors.white : Colors.black,
+                color: msg.isMe ? Colors.white : Colors.black,
                 fontSize: 15,
               ),
             ),
             const SizedBox(height: 5),
             Text(
-              msg["time"],
+              msg.time.substring(11, 16),
               style: TextStyle(
                 fontSize: 11,
-                color: isMe ? Colors.white70 : Colors.black54,
+                color: msg.isMe ? Colors.white70 : Colors.black54,
               ),
             ),
           ],
@@ -189,10 +204,12 @@ channel.sink.add(jsonEncode({
     );
   }
 
+  // ================= INPUT BAR =================
   Widget buildInputBar() {
     return SafeArea(
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
           color: Colors.white,
           boxShadow: [
@@ -212,7 +229,8 @@ channel.sink.add(jsonEncode({
                   filled: true,
                   fillColor: Colors.grey.shade100,
                   contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+                      const EdgeInsets.symmetric(
+                          horizontal: 15, vertical: 10),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(25),
                     borderSide: BorderSide.none,
@@ -230,62 +248,6 @@ channel.sink.add(jsonEncode({
             )
           ],
         ),
-      ),
-    );
-  }
-
-  Widget buildAppBar() {
-    return AppBar(
-      backgroundColor: Colors.green,
-      elevation: 1,
-      titleSpacing: 0,
-      title: Row(
-        children: [
-          CircleAvatar(
-            backgroundColor: Colors.white,
-            child: Text(widget.receiverName[0]),
-          ),
-          const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                widget.receiverName,
-                style: const TextStyle(fontSize: 16),
-              ),
-              const Text(
-                "Online",
-                style: TextStyle(fontSize: 12),
-              ),
-            ],
-          )
-        ],
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-    appBar: PreferredSize(
-     preferredSize: const Size.fromHeight(60), // Set your desired height
-  child: buildAppBar(),
-),
-      backgroundColor: const Color(0xFFECE5DD), // WhatsApp style bg
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              controller: scrollController,
-              reverse: true,
-              itemCount: messages.length,
-              itemBuilder: (context, index) {
-                return buildMessageBubble(messages[index]);
-              },
-            ),
-          ),
-          buildInputBar(),
-        ],
       ),
     );
   }

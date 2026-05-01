@@ -49,6 +49,16 @@ class DBmaker {
             type TEXT
             )
         ''');
+        
+        await db.execute('''
+        CREATE TABLE chatList(
+        id TEXT PRIMARY KEY,
+        receiverName TEXT,
+        receiverNum TEXT,
+        lastMessage TEXT,
+        time TEXT
+        )
+        ''');
     
       },
     );
