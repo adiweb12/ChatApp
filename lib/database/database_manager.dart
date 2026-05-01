@@ -52,11 +52,13 @@ class DBmaker {
         
         await db.execute('''
         CREATE TABLE chatList(
-        id TEXT PRIMARY KEY,
+        id TEXT,
+        currentUserPhone TEXT,
         receiverName TEXT,
         receiverNum TEXT,
         lastMessage TEXT,
-        time TEXT
+        time TEXT,
+        PRIMARY KEY (id, currentUserPhone)
         )
         ''');
     
