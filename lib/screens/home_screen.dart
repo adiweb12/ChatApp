@@ -99,20 +99,22 @@ Future<void> _syncMessages() async {
   }
 }
   // Fetches contacts from local SQLite that belong to current logged in user
-  void _loadActiveChats() async {
+  // Inside _HomeScreenState
+void _loadActiveChats() async {
   final chats = await getChatList(currentUser!.phoneNumber);
+  if (!mounted) return;
 
   setState(() {
     activeChats = chats.map((c) => SyncedContact(
-  id: c["user"],
-  userName: c["name"] ?? c["user"], // ✅ fallback if name not found
-  phoneNumber: c["user"],
-  currentUserPhone: currentUser!.phoneNumber,
-)).toList();
-
+      id: c["user"],
+      userName: c["name"], // This now properly uses the fallback from SQL
+      phoneNumber: c["user"],
+      currentUserPhone: currentUser!.phoneNumber,
+    )).toList();
     isListLoading = false;
   });
 }
+
 
   @override
   Widget build(BuildContext context) {
