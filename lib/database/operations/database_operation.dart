@@ -167,7 +167,8 @@ Future<bool> addNewChat(ChatList ctl) async {
     await dbClient.insert(
       "chatList",
       {
-        'id': ctl.id, // Fixed: Added quotes
+        'id': ctl.id, 
+        currentUserPhone': currentUser!.phoneNumber,
         'receiverName': ctl.receiverName,
         'receiverNum': ctl.receiverNum,
         'lastMessage': ctl.lastMessage,
@@ -181,11 +182,14 @@ Future<bool> addNewChat(ChatList ctl) async {
   }
 }
 
-Future<List<ChatList>> getAllChats() async {
+Future<List<ChatList>> getAllChats(String myPhone) async {
   final dbClient = await dbMaker.db;
 
-  final List<Map<String, dynamic>> maps =
-      await dbClient.query("chatList");
+  final maps = await dbClient.query(
+    "chatList",
+    where: "currentUserPhone = ?",
+    whereArgs: [myPhone],
+  );
 
   return List.generate(maps.length, (i) {
     return ChatList(
