@@ -134,8 +134,10 @@ Future<void> insertMessage(Message msg) async {
   final dbClient = await dbMaker.db;
 
   await dbClient.insert(
-    "messages",
+    "messages",{
     msg.toMap(),
+    "currentUserPhone": currentUser!.phoneNumber, // ✅
+  },
     conflictAlgorithm: ConflictAlgorithm.ignore, // ✅ IMPORTANT
   );
 }
@@ -145,8 +147,8 @@ Future<List<Message>> getMessages(String myPhone, String otherPhone) async {
 
   final result = await dbClient.query(
     "messages",
-    where: "(sender=? AND receiver=?) OR (sender=? AND receiver=?)",
-    whereArgs: [myPhone, otherPhone, otherPhone, myPhone],
+    where: "currentUserPhone=? AND ((sender=? AND receiver=?) OR (sender=? AND receiver=?))",
+whereArgs: [myPhone, myPhone, otherPhone, otherPhone, myPhone],
     orderBy: "time DESC",
   );
 
