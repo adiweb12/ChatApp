@@ -64,8 +64,9 @@ class _ChatPageState extends State<ChatPage> {
 
     final text = controller.text.trim();
     controller.clear();
+    final data = jsonDecode(response);
 
-    final senderName = json["senderName"] ?? json["from"];
+    final senderName = data["senderName"] ?? data["from"];
 
 Message msg = Message(
   id: json["id"],
