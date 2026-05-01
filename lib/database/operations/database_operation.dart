@@ -132,13 +132,13 @@ Future<List<SyncedContact>> getLocalSyncedContacts(String currentUserPhone) asyn
 
 Future<void> insertMessage(Message msg) async {
   final dbClient = await dbMaker.db;
-  await db.insert("messages", msg.toMap());
+  await dbClient.insert("messages", msg.toMap());
 }
 
 Future<List<Message>> getMessages(String myPhone, String otherPhone) async {
   final dbClient = await dbMaker.db;
 
-  final result = await db.query(
+  final result = await dbClient.query(
     "messages",
     where: "(sender=? AND receiver=?) OR (sender=? AND receiver=?)",
     whereArgs: [myPhone, otherPhone, otherPhone, myPhone],
@@ -159,7 +159,7 @@ Future<List<Message>> getMessages(String myPhone, String otherPhone) async {
 Future<List<Map<String, dynamic>>> getChatList(String myPhone) async {
  final dbClient = await dbMaker.db; 
 
-  final result = await db.rawQuery("""
+  final result = await dbClient.rawQuery("""
     SELECT 
   CASE 
     WHEN sender = ? THEN receiver 
