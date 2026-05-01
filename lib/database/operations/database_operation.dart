@@ -173,7 +173,7 @@ Future<bool> addNewChat(ChatList ctl) async {
       {
         'id': ctl.id, 
         'currentUserPhone': currentUser!.phoneNumber,
-        'receiverName':senderName,
+        'receiverName':ctl.receiverName,
         'receiverNum': ctl.receiverNum,
         'lastMessage': ctl.lastMessage,
         'time': ctl.time,
@@ -197,11 +197,11 @@ Future<List<ChatList>> getAllChats(String myPhone) async {
 
   return List.generate(maps.length, (i) {
     return ChatList(
-      id: maps[i]['id'],
-      receiverName: maps[i]['receiverName'],
-      receiverNum: maps[i]['receiverNum'],
-      lastMessage: maps[i]['lastMessage'],
-      time: maps[i]['time'],
-    );
+  id: maps[i]['id'] as String,
+  receiverName: maps[i]['receiverName'] as String,
+  receiverNum: maps[i]['receiverNum'] as String,
+  lastMessage: maps[i]['lastMessage'] as String,
+  time: maps[i]['time'] as String,
+);
   });
 }
