@@ -135,11 +135,12 @@ Future<void> insertMessage(Message msg) async {
   final dbClient = await dbMaker.db;
 
   await dbClient.insert(
-    "messages",{
+    "messages",
+    {
     msg.toMap(),
-    "currentUserPhone": currentUser!.phoneNumber, // ✅
+    "currentUserPhone": currentUser!.phoneNumber, 
   },
-    conflictAlgorithm: ConflictAlgorithm.ignore, // ✅ IMPORTANT
+    conflictAlgorithm: ConflictAlgorithm.ignore, 
   );
 }
 
