@@ -48,34 +48,27 @@ void initState() {
   }));
 
  channel.stream.listen((data) async {
-  final msg = jsonDecode(data);
+  if (!mounted) return; // ✅ Crucial check
 
-  // ❗ ignore my own messages
+  final msg = jsonDecode(data);
   if (msg["from"] == currentUser!.phoneNumber) return;
 
-
-  Message newMsg = Message(
-    id: msg["id"],
-    sender: msg["from"],
-    receiver: msg["to"],
-    message: msg["message"],
-    time: msg["time"],
-    type: "text",
-    isMe: false,
-  );
+  // ... (your Message object creation logic)
 
   await insertMessage(newMsg);
 
-  setState(() {
-    messages.insert(0, {
-      "text": newMsg.message,
-      "isMe": false,
-      "time": TimeOfDay.fromDateTime(
-  DateTime.parse(newMsg.time),
-).format(context),
+  if (mounted) { // ✅ Check again before UI update
+    setState(() {
+      messages.insert(0, {
+        "text": newMsg.message,
+        "isMe": false,
+        "time": TimeOfDay.fromDateTime(DateTime.parse(newMsg.time)).format(context),
+      });
     });
-  });
+  }
 });
+
+ 
 }
 
 void _loadMessages() async {
