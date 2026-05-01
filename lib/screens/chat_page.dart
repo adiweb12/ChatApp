@@ -6,6 +6,9 @@ import 'package:onechat/models/models.dart';
 import 'package:onechat/database/operations/database_operation.dart';
 import 'package:onechat/database/database_manager.dart';
 import 'package:onechat/models/models.dart';
+import 'package:uuid/uuid.dart';
+
+final uuid = Uuid();
 
 class ChatPage extends StatefulWidget {
   final String receiverPhone;
@@ -22,17 +25,21 @@ class ChatPage extends StatefulWidget {
 }
 
 class _ChatPageState extends State<ChatPage> {
-  late WebSocketChannel channel;
+    
   final TextEditingController controller = TextEditingController();
   final ScrollController scrollController = ScrollController();
 
   List<Map<String, dynamic>> messages = [];
+  
+  late WebSocketChannel channel;
+bool isConnected = false;
 
-  @override
+@override
 void initState() {
   super.initState();
   _loadMessages();
 
+  // ✅ create ONLY ONCE
   channel = WebSocketChannel.connect(Uri.parse(webSocketIp));
 
   channel.sink.add(jsonEncode({
@@ -40,29 +47,36 @@ void initState() {
     "from": currentUser!.phoneNumber,
   }));
 
-  channel.stream.listen((data) async {
-    final msg = jsonDecode(data);
+ channel.stream.listen((data) async {
+  final msg = jsonDecode(data);
 
-    Message newMsg = Message(
-      id: DateTime.now().toString(),
-      sender: msg["from"],
-      receiver: msg["to"],
-      message: msg["message"],
-      time: DateTime.now().toIso8601String(),
-      type: "text",
-      isMe: false,
-    );
+  // ❗ ignore my own messages
+  if (msg["from"] == currentUser!.phoneNumber) return;
 
-    await insertMessage(newMsg); // ✅ SAVE
+  // ❗ ignore messages not for this chat
+  if (msg["from"] != widget.receiverPhone &&
+      msg["to"] != widget.receiverPhone) return;
 
-    setState(() {
-      messages.insert(0, {
-        "text": newMsg.message,
-        "isMe": false,
-        "time": TimeOfDay.now().format(context),
-      });
+  Message newMsg = Message(
+    id: msg["id"],
+    sender: msg["from"],
+    receiver: msg["to"],
+    message: msg["message"],
+    time: msg["time"],
+    type: "text",
+    isMe: false,
+  );
+
+  await insertMessage(newMsg);
+
+  setState(() {
+    messages.insert(0, {
+      "text": newMsg.message,
+      "isMe": false,
+      "time": newMsg.time,
     });
   });
+});
 }
 
 void _loadMessages() async {
@@ -78,14 +92,18 @@ void _loadMessages() async {
       "time": m.time,
     }).toList();
   });
+
+  // ✅ auto scroll
+  await Future.delayed(const Duration(milliseconds: 100));
+  scrollController.jumpTo(0);
 }
-  void sendMessage() async {
+ void sendMessage() async {
   if (controller.text.trim().isEmpty) return;
 
   final msgText = controller.text.trim();
 
   Message msg = Message(
-    id: DateTime.now().toString(),
+    id: const Uuid().v4(), // ✅ IMPORTANT (use uuid)
     sender: currentUser!.phoneNumber,
     receiver: widget.receiverPhone,
     message: msgText,
@@ -94,31 +112,34 @@ void _loadMessages() async {
     isMe: true,
   );
 
-  await insertMessage(msg); // ✅ SAVE
+  await insertMessage(msg);
 
+  // ✅ SEND TO SOCKET
   channel.sink.add(jsonEncode({
+    "id": msg.id,
     "type": "message",
     "from": msg.sender,
     "to": msg.receiver,
     "message": msg.message,
   }));
 
-  setState(() {
-    messages.insert(0, {
-      "text": msg.message,
-      "isMe": true,
-      "time": TimeOfDay.now().format(context),
-    });
-  });
-
   controller.clear();
+
+  // ✅ RELOAD UI FROM DATABASE
+  setState(() {
+  messages.insert(0, {
+    "text": msg.message,
+    "isMe": true,
+    "time":newMsg.time ,
+  });
+});
 }
 
   @override
   void dispose() {
     channel.sink.close();
     controller.dispose();
-    scrollController.dispose();
+    scrollController.dispose
     super.dispose();
   }
 
