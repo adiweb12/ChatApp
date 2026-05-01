@@ -61,7 +61,7 @@ Future<void> _init() async {
 }
 
 Future<void> _loadActiveChats() async {
-  final chats = await getAllChats();
+  final chats = await getAllChats(currentUser!.phoneNumber);
 
   setState(() {
     activeChats = chats.map((c) => SyncedContact(
