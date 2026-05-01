@@ -53,9 +53,6 @@ void initState() {
   // ❗ ignore my own messages
   if (msg["from"] == currentUser!.phoneNumber) return;
 
-  // ❗ ignore messages not for this chat
-  if (msg["from"] != widget.receiverPhone &&
-      msg["to"] != widget.receiverPhone) return;
 
   Message newMsg = Message(
     id: msg["id"],
@@ -73,7 +70,9 @@ void initState() {
     messages.insert(0, {
       "text": newMsg.message,
       "isMe": false,
-      "time": newMsg.time,
+      "time": TimeOfDay.fromDateTime(
+  DateTime.parse(newMsg.time),
+).format(context),,
     });
   });
 });
@@ -89,11 +88,10 @@ void _loadMessages() async {
     messages = msgs.map((m) => {
       "text": m.message,
       "isMe": m.isMe,
-      "time": m.time,
+      "time": TimeOfDay.fromDateTime(DateTime.parse(m.time)).format(context),
     }).toList();
   });
 
-  // ✅ auto scroll
   await Future.delayed(const Duration(milliseconds: 100));
   scrollController.jumpTo(0);
 }
@@ -114,26 +112,26 @@ void _loadMessages() async {
 
   controller.clear();
 
-  // ✅ UPDATE UI FIRST (instant feel)
-  setState(() {
-    messages.insert(0, {
-      "text": msg.message,
-      "isMe": true,
-      "time": msg.time,
-    });
+// ✅ show instantly
+setState(() {
+  messages.insert(0, {
+    "text": msg.message,
+    "isMe": true,
+    "time": TimeOfDay.now().format(context),
   });
+});
 
-  // ✅ Save in background
-  await insertMessage(msg);
+// ✅ save
+await insertMessage(msg);
 
-  // ✅ Send to server
-  channel.sink.add(jsonEncode({
-    "id": msg.id,
-    "type": "message",
-    "from": msg.sender,
-    "to": msg.receiver,
-    "message": msg.message,
-  }));
+// ✅ send
+channel.sink.add(jsonEncode({
+  "id": msg.id,
+  "type": "message",
+  "from": msg.sender,
+  "to": msg.receiver,
+  "message": msg.message,
+}));
 }
 
   @override
