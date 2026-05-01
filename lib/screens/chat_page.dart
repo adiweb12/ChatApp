@@ -130,7 +130,7 @@ void _loadMessages() async {
   messages.insert(0, {
     "text": msg.message,
     "isMe": true,
-    "time":newMsg.time ,
+    "time":msg.time ,
   });
 });
 }
@@ -139,7 +139,7 @@ void _loadMessages() async {
   void dispose() {
     channel.sink.close();
     controller.dispose();
-    scrollController.dispose
+    scrollController.dispose();
     super.dispose();
   }
 
