@@ -46,7 +46,8 @@ class DBmaker {
             receiver TEXT,
             message TEXT,
             time TEXT,
-            type TEXT
+            type TEXT,
+            currentUserPhone TEXT
             )
         ''');
         
