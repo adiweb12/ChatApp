@@ -157,21 +157,21 @@ Future<List<Message>> getMessages(String myPhone, String otherPhone) async {
 }
 
 Future<List<Map<String, dynamic>>> getChatList(String myPhone) async {
- final dbClient = await dbMaker.db; 
+  final dbClient = await dbMaker.db;
 
   final result = await dbClient.rawQuery("""
     SELECT 
-  CASE 
-    WHEN sender = ? THEN receiver 
-    ELSE sender 
-  END as user,
-  message,
-  MAX(time) as lastTime
-FROM messages
-WHERE sender = ? OR receiver = ?
-GROUP BY user
-ORDER BY lastTime DESC
-  """, [myPhone, myPhone]);
+      CASE 
+        WHEN sender = ? THEN receiver 
+        ELSE sender 
+      END as user,
+      message,
+      MAX(time) as lastTime
+    FROM messages
+    WHERE sender = ? OR receiver = ?
+    GROUP BY user
+    ORDER BY lastTime DESC
+  """, [myPhone, myPhone, myPhone]); // ✅ FIXED
 
   return result;
 }
