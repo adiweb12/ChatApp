@@ -131,12 +131,12 @@ Future<List<SyncedContact>> getLocalSyncedContacts(String currentUserPhone) asyn
 }
 
 Future<void> insertMessage(Message msg) async {
-  final db = await getDatabase();
+  final dbClient = await dbMaker.db;
   await db.insert("messages", msg.toMap());
 }
 
 Future<List<Message>> getMessages(String myPhone, String otherPhone) async {
-  final db = await getDatabase();
+  final dbClient = await dbMaker.db;
 
   final result = await db.query(
     "messages",
@@ -157,7 +157,7 @@ Future<List<Message>> getMessages(String myPhone, String otherPhone) async {
 }
 
 Future<List<Map<String, dynamic>>> getChatList(String myPhone) async {
-  final db = await getDatabase();
+ final dbClient = await dbMaker.db; 
 
   final result = await db.rawQuery("""
     SELECT 
