@@ -46,28 +46,37 @@ void initState() {
     "type": "register",
     "from": currentUser!.phoneNumber,
   }));
-
- channel.stream.listen((data) async {
-  if (!mounted) return; // ✅ Crucial check
+  channel.stream.listen((data) async {
+  if (!mounted) return;
 
   final msg = jsonDecode(data);
   if (msg["from"] == currentUser!.phoneNumber) return;
 
-  // ... (your Message object creation logic)
+  // ✅ Define the missing newMsg variable here
+  Message newMsg = Message(
+    id: msg["id"] ?? const Uuid().v4(),
+    sender: msg["from"],
+    receiver: msg["to"],
+    message: msg["message"],
+    time: msg["time"] ?? DateTime.now().toIso8601String(),
+    type: "text",
+    isMe: false,
+  );
 
   await insertMessage(newMsg);
 
-  if (mounted) { // ✅ Check again before UI update
+  if (mounted) {
     setState(() {
       messages.insert(0, {
         "text": newMsg.message,
         "isMe": false,
-        "time": TimeOfDay.fromDateTime(DateTime.parse(newMsg.time)).format(context),
+        "time": TimeOfDay.fromDateTime(
+          DateTime.parse(newMsg.time),
+        ).format(context),
       });
     });
   }
 });
-
  
 }
 
