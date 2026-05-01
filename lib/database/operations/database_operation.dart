@@ -95,16 +95,13 @@ Future<bool> updateEmailDataBase(String phonenumber, String newEmail) async {
 Future<bool> insertSyncedContact(SyncedContact contact) async {
   try {
     final dbClient = await dbMaker.db;
-    String normalize(String num) {
-  return num.replaceAll(RegExp(r'\D'), '').replaceAll(RegExp(r'^91'), '');
-}
     await dbClient.insert(
   "synedContacts",
   {
     'id': contact.id,
     'currentUserPhone': contact.currentUserPhone,
     'userName': contact.userName,
-    'phoneNumber': normalize(contact.phoneNumber), // ✅ FIX
+    'phoneNumber':contact.phoneNumber, // ✅ FIX
   },
   conflictAlgorithm: ConflictAlgorithm.replace,
 );
@@ -168,27 +165,34 @@ Future<List<Map<String, dynamic>>> getChatList(String myPhone) async {
   final dbClient = await dbMaker.db;
 
   final result = await dbClient.rawQuery("""
-  SELECT 
-    CASE 
-      WHEN m.sender = ? THEN m.receiver 
-      ELSE m.sender 
-    END as user,
-    sc.userName as name,
-    m.message,
-    MAX(m.time) as lastTime
-  FROM messages m
-  LEFT JOIN synedContacts sc
-    ON substr(sc.phoneNumber, -10) = substr(
+    SELECT 
       CASE 
         WHEN m.sender = ? THEN m.receiver 
         ELSE m.sender 
-      END, -10
-    )
-    AND sc.currentUserPhone = ?
-  WHERE m.sender = ? OR m.receiver = ?
-  GROUP BY user
-  ORDER BY lastTime DESC
-""", [myPhone, myPhone, myPhone, myPhone, myPhone]);
+      END as user,
+      sc.userName as syncedName,
+      m.message,
+      MAX(m.time) as lastTime
+    FROM messages m
+    LEFT JOIN synedContacts sc
+      ON sc.phoneNumber = (
+        CASE 
+          WHEN m.sender = ? THEN m.receiver 
+          ELSE m.sender 
+        END
+      )
+      AND sc.currentUserPhone = ?
+    WHERE m.sender = ? OR m.receiver = ?
+    GROUP BY user
+    ORDER BY lastTime DESC
+  """, [myPhone, myPhone, myPhone, myPhone, myPhone]);
 
-  return result;
+  // ✅ FIX: fallback name
+  return result.map((e) {
+    return {
+      "user": e["user"],
+      "name": e["syncedName"] ?? e["user"], // fallback
+      "message": e["message"],
+    };
+  }).toList();
 }
