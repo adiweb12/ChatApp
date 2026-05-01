@@ -14,7 +14,7 @@ class WSService {
 
   Function(Message msg)? onMessageReceived;
 
-  void connect(String myPhone) {
+  Future<void> connect(String myPhone) async{
     _channel = WebSocketChannel.connect(
       Uri.parse(webSocketIp),
     );
