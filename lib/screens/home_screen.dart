@@ -12,6 +12,7 @@ import 'package:onechat/constant/api_urls.dart';
 import 'package:onechat/backend/api_services.dart';
 import 'package:dio/dio.dart';
 import 'package:onechat/backend/ws_services.dart';
+import 'package:onechat/functions/web_functions.dart';
 
 class Starter extends StatelessWidget {
   const Starter({super.key});
