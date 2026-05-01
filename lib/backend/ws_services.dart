@@ -22,7 +22,7 @@ class WSService {
     // REGISTER USER
     _channel!.sink.add(jsonEncode({
       "type": "register",
-      "from": myPhone,
+      "token": await getToken(),
     }));
 
     // LISTEN
