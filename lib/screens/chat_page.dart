@@ -103,7 +103,7 @@ void _loadMessages() async {
   final msgText = controller.text.trim();
 
   Message msg = Message(
-    id: const Uuid().v4(), // ✅ IMPORTANT (use uuid)
+    id: const Uuid().v4(),
     sender: currentUser!.phoneNumber,
     receiver: widget.receiverPhone,
     message: msgText,
@@ -112,9 +112,21 @@ void _loadMessages() async {
     isMe: true,
   );
 
+  controller.clear();
+
+  // ✅ UPDATE UI FIRST (instant feel)
+  setState(() {
+    messages.insert(0, {
+      "text": msg.message,
+      "isMe": true,
+      "time": msg.time,
+    });
+  });
+
+  // ✅ Save in background
   await insertMessage(msg);
 
-  // ✅ SEND TO SOCKET
+  // ✅ Send to server
   channel.sink.add(jsonEncode({
     "id": msg.id,
     "type": "message",
@@ -122,17 +134,6 @@ void _loadMessages() async {
     "to": msg.receiver,
     "message": msg.message,
   }));
-
-  controller.clear();
-
-  // ✅ RELOAD UI FROM DATABASE
-  setState(() {
-  messages.insert(0, {
-    "text": msg.message,
-    "isMe": true,
-    "time":msg.time ,
-  });
-});
 }
 
   @override
