@@ -58,9 +58,12 @@ class WSService {
     });
   }
 
-  void sendMessage(Message msg) {
+  Future<void> sendMessage(Message msg) async{
+
+  final token = await getToken();
     _channel?.sink.add(jsonEncode({
       "type": "message",
+       "token": token,
       "id": msg.id,
       "from": msg.sender,
       "to": msg.receiver,
