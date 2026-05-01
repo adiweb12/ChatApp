@@ -188,7 +188,7 @@ Future<List<ChatList>> getAllChats() async {
       await dbClient.query("chatList");
 
   return List.generate(maps.length, (i) {
-    return UserDetails(
+    return ChatList(
       id: maps[i]['id'],
       receiverName: maps[i]['receiverName'],
       receiverNum: maps[i]['receiverNum'],
