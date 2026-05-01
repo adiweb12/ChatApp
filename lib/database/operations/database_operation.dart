@@ -168,7 +168,7 @@ Future<bool> addNewChat(ChatList ctl) async {
       "chatList",
       {
         'id': ctl.id, 
-        currentUserPhone': currentUser!.phoneNumber,
+        'currentUserPhone': currentUser!.phoneNumber,
         'receiverName': ctl.receiverName,
         'receiverNum': ctl.receiverNum,
         'lastMessage': ctl.lastMessage,
