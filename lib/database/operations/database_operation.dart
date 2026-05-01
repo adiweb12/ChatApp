@@ -166,33 +166,29 @@ Future<List<Map<String, dynamic>>> getChatList(String myPhone) async {
 
   final result = await dbClient.rawQuery("""
     SELECT 
-      CASE 
-        WHEN m.sender = ? THEN m.receiver 
-        ELSE m.sender 
-      END as user,
+      CASE WHEN m.sender = ? THEN m.receiver ELSE m.sender END as chatUser,
       sc.userName as syncedName,
       m.message,
-      MAX(m.time) as lastTime
+      m.time
     FROM messages m
-    LEFT JOIN synedContacts sc
-      ON sc.phoneNumber = (
-        CASE 
-          WHEN m.sender = ? THEN m.receiver 
-          ELSE m.sender 
-        END
-      )
-      AND sc.currentUserPhone = ?
+    LEFT JOIN synedContacts sc ON sc.phoneNumber = 
+      (CASE WHEN m.sender = ? THEN m.receiver ELSE m.sender END)
     WHERE m.sender = ? OR m.receiver = ?
-    GROUP BY user
-    ORDER BY lastTime DESC
-  """, [myPhone, myPhone, myPhone, myPhone, myPhone]);
+    GROUP BY chatUser
+    ORDER BY m.time DESC
+  """, [myPhone, myPhone, myPhone, myPhone]);
 
-  // ✅ FIX: fallback name
   return result.map((e) {
     return {
-      "user": e["user"],
-      "name": e["syncedName"] ?? e["user"], // fallback
+      "user": e["chatUser"],
+      "name": e["syncedName"] ?? _formatPhoneNumber(e["chatUser"].toString()), 
       "message": e["message"],
     };
   }).toList();
+}
+
+// Helper to make raw numbers look cleaner if no name exists
+String _formatPhoneNumber(String phone) {
+  if (phone.length > 10) return "+${phone.substring(0, 2)} ${phone.substring(2)}";
+  return phone;
 }
