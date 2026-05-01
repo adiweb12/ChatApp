@@ -3,6 +3,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:onechat/models/models.dart';
 import 'package:onechat/database/operations/database_operation.dart';
 import 'package:onechat/constant/api_urls.dart';
+import 'package:onechat/backend/api_services.dart';
 
 class WSService {
   static final WSService _instance = WSService._internal();
