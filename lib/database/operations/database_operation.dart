@@ -132,7 +132,12 @@ Future<List<SyncedContact>> getLocalSyncedContacts(String currentUserPhone) asyn
 
 Future<void> insertMessage(Message msg) async {
   final dbClient = await dbMaker.db;
-  await dbClient.insert("messages", msg.toMap());
+
+  await dbClient.insert(
+    "messages",
+    msg.toMap(),
+    conflictAlgorithm: ConflictAlgorithm.ignore, // ✅ IMPORTANT
+  );
 }
 
 Future<List<Message>> getMessages(String myPhone, String otherPhone) async {
@@ -162,16 +167,25 @@ Future<List<Map<String, dynamic>>> getChatList(String myPhone) async {
   final result = await dbClient.rawQuery("""
     SELECT 
       CASE 
-        WHEN sender = ? THEN receiver 
-        ELSE sender 
+        WHEN m.sender = ? THEN m.receiver 
+        ELSE m.sender 
       END as user,
-      message,
-      MAX(time) as lastTime
-    FROM messages
-    WHERE sender = ? OR receiver = ?
+      sc.userName as name,
+      m.message,
+      MAX(m.time) as lastTime
+    FROM messages m
+    LEFT JOIN synedContacts sc
+      ON sc.phoneNumber = (
+        CASE 
+          WHEN m.sender = ? THEN m.receiver 
+          ELSE m.sender 
+        END
+      )
+      AND sc.currentUserPhone = ?
+    WHERE m.sender = ? OR m.receiver = ?
     GROUP BY user
     ORDER BY lastTime DESC
-  """, [myPhone, myPhone, myPhone]); // ✅ FIXED
+  """, [myPhone, myPhone, myPhone, myPhone, myPhone]);
 
   return result;
 }
