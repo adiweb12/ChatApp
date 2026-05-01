@@ -8,7 +8,9 @@ import 'package:onechat/functions/functions.dart';
 import 'package:onechat/screens/bottom_bar.dart';
 import 'package:onechat/screens/add_chat_group.dart';
 import 'package:onechat/screens/chat_page.dart';
-import 'package:onechat/constant/api_url.dart';
+import 'package:onechat/constant/api_urls.dart';
+import 'package:onechat/backend/api_services.dart';
+import 'package:dio/dio.dart';
 
 class Starter extends StatelessWidget {
   const Starter({super.key});
