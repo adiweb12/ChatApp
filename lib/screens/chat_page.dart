@@ -30,21 +30,27 @@ class _ChatPageState extends State<ChatPage> {
 
   List<Message> messages = [];
 
-  @override
-  void initState() {
-    super.initState();
-    loadMessages();
+@override
+void initState() {
+  super.initState();
+  loadMessages();
 
-    // ✅ Real-time listener
-    WSService().onMessageReceived = (msg) {
-      if (msg.sender == widget.receiverPhone) {
+  WSService().onMessageReceived = (msg) {
+    // Only update UI if the message is from the person I am currently talking to
+    if (msg.sender == widget.receiverPhone || msg.receiver == widget.receiverPhone) {
+      if (mounted) {
         setState(() {
-          messages.insert(0, msg);
+          // Check for duplicates before inserting
+          if (!messages.any((m) => m.id == msg.id)) {
+            messages.insert(0, msg);
+          }
         });
         _scrollToTop();
       }
-    };
-  }
+    }
+  };
+}
+
 
   // ================= LOAD OLD =================
   Future<void> loadMessages() async {
