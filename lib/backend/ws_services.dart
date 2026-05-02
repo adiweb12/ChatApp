@@ -28,35 +28,36 @@ class WSService {
 
     // LISTEN
     _channel!.stream.listen((data) async {
-      final json = jsonDecode(data);
+  final json = jsonDecode(data);
 
-      Message msg = Message(
-        id: json["id"],
-        sender: json["from"],
-        receiver: json["to"],
-        message: json["message"],
-        time: json["time"],
-        type: "text",
-        isMe: false,
-      );
+  Message msg = Message(
+    id: json["id"],
+    sender: json["from"],
+    receiver: json["to"],
+    message: json["message"],
+    time: json["time"],
+    type: "text",
+    isMe: false,
+  );
 
-      // SAVE MESSAGE
-      await insertMessage(msg);
+  // CRITICAL: Await the database save before triggering the callback
+  await insertMessage(msg);
 
-      // UPDATE CHAT LIST
-      await addNewChat(ChatList(
-        id: msg.sender,
-        receiverName: msg.sender,
-        receiverNum: msg.sender,
-        lastMessage: msg.message,
-        time: msg.time,
-      ));
+  // Update the chat list so the home screen shows the latest snippet
+  await addNewChat(ChatList(
+    id: msg.sender,
+    receiverName: msg.sender, // The Home Screen mapping logic above will fix this name
+    receiverNum: msg.sender,
+    lastMessage: msg.message,
+    time: msg.time,
+  ));
 
-      // CALLBACK TO UI
-      if (onMessageReceived != null) {
-        onMessageReceived!(msg);
-      }
-    });
+  // Trigger UI update
+  if (onMessageReceived != null) {
+    onMessageReceived!(msg);
+  }
+});
+
   }
 
   Future<void> sendMessage(Message msg) async{
