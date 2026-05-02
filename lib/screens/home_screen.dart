@@ -61,19 +61,37 @@ Future<void> _init() async {
 }
 
 Future<void> _loadActiveChats() async {
+  // 1. Get all chat headers from SQLite
   final chats = await getAllChats(currentUser!.phoneNumber);
+  
+  // 2. Get your local synced contacts to find names
+  final localContacts = await getLocalSyncedContacts(currentUser!.phoneNumber);
 
   setState(() {
-    activeChats = chats.map((c) => SyncedContact(
-      id: c.id,
-      currentUserPhone: currentUser!.phoneNumber,
-      userName: c.receiverName,
-      phoneNumber: c.receiverNum,
-    )).toList();
+    activeChats = chats.map((c) {
+      // 3. Find if this phone number exists in our contact list
+      final matchingContact = localContacts.firstWhere(
+        (contact) => contact.phoneNumber == c.receiverNum,
+        orElse: () => SyncedContact(
+          id: '', 
+          currentUserPhone: '', 
+          userName: c.receiverNum, // Fallback to number if name not found
+          phoneNumber: c.receiverNum
+        ),
+      );
+
+      return SyncedContact(
+        id: c.id,
+        currentUserPhone: currentUser!.phoneNumber,
+        userName: matchingContact.userName, // Now uses the actual Name
+        phoneNumber: c.receiverNum,
+      );
+    }).toList();
 
     isListLoading = false;
   });
 }
+
 
   @override
   Widget build(BuildContext context) {
