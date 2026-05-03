@@ -24,7 +24,7 @@ class _LoginPageState extends State<LoginPage> {
     String? errorMessage = await loginLogic(
       email: emailController.text.trim(),
       password: passwordController.text.trim(),
-      allUsers: globalUserList,
+      allUsers: [],
     );
 
     if (!mounted) return;

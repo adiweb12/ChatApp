@@ -29,7 +29,7 @@ Future<void> _handleSignup() async {
       phonenumber: phonenumberController.text,
       dob: dobController.text,
       password: passwordController.text,
-      allUsers: globalUserList,
+      allUsers: [],
     );
 
     if (!mounted) return;

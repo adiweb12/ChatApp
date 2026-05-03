@@ -3,8 +3,7 @@ import 'package:onechat/functions/functions.dart';
 import 'package:onechat/models/models.dart';
 import 'package:onechat/database/operations/database_operation.dart';
 import 'package:onechat/screens/home_screen.dart';
-import 'package:onechat/screens/chat_page.dart'; 
-import 'package:onechat/database/operations/database_operation.dart';
+import 'package:onechat/screens/chat_page.dart';
 
 class AddChatGroupPage extends StatefulWidget {
   const AddChatGroupPage({super.key});
@@ -26,27 +25,17 @@ void initState() {
   });
 }
 
-  // --- FIX 1: Passed context here ---
   void _loadMatchedContacts() async {
   var synced = await getMatchedContacts(context);
 
-  // 👇 Local DB users
-  var localUsers = await getAllUsers();
+  // Use synced contacts from local DB instead of getAllUsers
+  var localContacts = await getLocalSyncedContacts(currentUser!.phoneNumber);
 
-  List<SyncedContact> localContacts = localUsers.map((user) => SyncedContact(
-    id: user.id,
-    userName: user.userName,
-    phoneNumber: user.phoneNumber,
-    currentUserPhone: currentUser?.phoneNumber ?? "",
-  )).toList();
-
-  // ✅ Merge without duplicates
+  // Merge without duplicates
   final Map<String, SyncedContact> uniqueMap = {};
-
   for (var c in synced) {
     uniqueMap[c.phoneNumber] = c;
   }
-
   for (var c in localContacts) {
     uniqueMap[c.phoneNumber] = c;
   }
@@ -249,24 +238,14 @@ class _SelectParticipantsPageState extends State<SelectParticipantsPage> {
   }
 
   
-  // --- FIX 2: Passed context here too ---
   void _loadData() async {
   var synced = await getMatchedContacts(context);
-  var localUsers = await getAllUsers();
-
-  List<SyncedContact> localContacts = localUsers.map((user) => SyncedContact(
-        id: user.id,
-        userName: user.userName,
-        phoneNumber: user.phoneNumber,
-        currentUserPhone: currentUser?.phoneNumber ?? "",
-      )).toList();
+  var localContacts = await getLocalSyncedContacts(currentUser!.phoneNumber);
 
   final Map<String, SyncedContact> uniqueMap = {};
-
   for (var c in synced) {
     uniqueMap[c.phoneNumber] = c;
   }
-
   for (var c in localContacts) {
     uniqueMap[c.phoneNumber] = c;
   }

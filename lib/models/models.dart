@@ -108,3 +108,4 @@ class ChatList {
 // ====================== GLOBALS ======================
 bool isLoggedIn = false;
 UserDetails? currentUser;
+List<UserDetails> globalUserList = []; // kept for backward compatibility

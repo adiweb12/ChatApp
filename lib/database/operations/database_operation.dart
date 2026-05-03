@@ -40,6 +40,12 @@ Future<UserDetails?> getUser(String email, String password) async {
   return null;
 }
 
+Future<List<UserDetails>> getAllUsers() async {
+  final db = await dbMaker.db;
+  final maps = await db.query("UserData");
+  return maps.map(_mapToUser).toList();
+}
+
 Future<bool> updateEmailDataBase(String phoneNumber, String newEmail) async {
   try {
     final db = await dbMaker.db;
