@@ -1,15 +1,18 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:onechat/database/database_manager.dart';
 import 'package:onechat/models/models.dart';
-import 'package:onechat/screens/chat_page.dart';
+
+// ================================================================
+//  USER OPERATIONS
+// ================================================================
 
 Future<bool> insertUser(UserDetails user) async {
   try {
-    final dbClient = await dbMaker.db; // Use the instance
-    await dbClient.insert(
+    final db = await dbMaker.db;
+    await db.insert(
       "UserData",
       {
-        'id': user.id, // Fixed: Added quotes
+        'id': user.id,
         'userName': user.userName,
         'email': user.email,
         'phoneNumber': user.phoneNumber,
@@ -18,190 +21,245 @@ Future<bool> insertUser(UserDetails user) async {
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
-    return true; // Added missing return
-  } catch (e) {
+    return true;
+  } catch (_) {
     return false;
   }
 }
 
 Future<UserDetails?> getUser(String email, String password) async {
-  final dbClient = await dbMaker.db;
-  List<Map<String, dynamic>> maps = await dbClient.query(
+  final db = await dbMaker.db;
+  final maps = await db.query(
     "UserData",
     where: "email = ? AND password = ?",
     whereArgs: [email, password],
   );
   if (maps.isNotEmpty) {
-    return UserDetails(
-      id: maps[0]['id'],
-      userName: maps[0]['userName'],
-      email: maps[0]['email'],
-      phoneNumber: maps[0]['phoneNumber'],
-      password: maps[0]['password'],
-      dob: maps[0]['dob'],
-    );
+    return _mapToUser(maps[0]);
   }
   return null;
 }
 
-Future<List<UserDetails>> getAllUsers() async {
-  final dbClient = await dbMaker.db;
-
-  final List<Map<String, dynamic>> maps =
-      await dbClient.query("UserData");
-
-  return List.generate(maps.length, (i) {
-    return UserDetails(
-      id: maps[i]['id'],
-      userName: maps[i]['userName'],
-      email: maps[i]['email'],
-      phoneNumber: maps[i]['phoneNumber'],
-      password: maps[i]['password'],
-      dob: maps[i]['dob'],
+Future<bool> updateEmailDataBase(String phoneNumber, String newEmail) async {
+  try {
+    final db = await dbMaker.db;
+    final count = await db.update(
+      "UserData",
+      {'email': newEmail},
+      where: "phoneNumber = ?",
+      whereArgs: [phoneNumber],
     );
-  });
+    return count > 0;
+  } catch (_) {
+    return false;
+  }
 }
 
 Future<bool> updatePassDataBase(String email, String newPassword) async {
   try {
-    final dbClient = await dbMaker.db;
-    int count = await dbClient.update(
+    final db = await dbMaker.db;
+    final count = await db.update(
       "UserData",
-      {'password': newPassword}, // The column to update
-      where: "email = ?",        // The condition
+      {'password': newPassword},
+      where: "email = ?",
       whereArgs: [email],
     );
-    return count > 0; // Returns true if a row was updated
-  } catch (e) {
-    return false;
-  }
-}
-
-
-Future<bool> updateEmailDataBase(String phonenumber, String newEmail) async {
-  try {
-    final dbClient = await dbMaker.db;
-    int count = await dbClient.update(
-      "UserData",
-      {'email': newEmail},
-      where: "phoneNumber = ?",
-      whereArgs: [phonenumber],
-    );
     return count > 0;
-  } catch (e) {
+  } catch (_) {
     return false;
   }
 }
+
+UserDetails _mapToUser(Map<String, dynamic> m) => UserDetails(
+      id: m['id'],
+      userName: m['userName'],
+      email: m['email'],
+      phoneNumber: m['phoneNumber'],
+      password: m['password'],
+      dob: m['dob'],
+    );
+
+// ================================================================
+//  SYNCED CONTACTS
+// ================================================================
 
 Future<bool> insertSyncedContact(SyncedContact contact) async {
   try {
-    final dbClient = await dbMaker.db;
-    await dbClient.insert(
-  "synedContacts",
-  {
-    'id': contact.id,
-    'currentUserPhone': contact.currentUserPhone,
-    'userName': contact.userName,
-    'phoneNumber':contact.phoneNumber, // ✅ FIX
-  },
-  conflictAlgorithm: ConflictAlgorithm.replace,
-);
+    final db = await dbMaker.db;
+    await db.insert(
+      "synedContacts",
+      {
+        'id': contact.id,
+        'currentUserPhone': contact.currentUserPhone,
+        'userName': contact.userName,
+        'phoneNumber': contact.phoneNumber,
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
     return true;
-  } catch (e) {
+  } catch (_) {
     return false;
   }
 }
 
-// Fetch only contacts belonging to the logged-in user
-Future<List<SyncedContact>> getLocalSyncedContacts(String currentUserPhone) async {
-  final dbClient = await dbMaker.db;
-  final List<Map<String, dynamic>> maps = await dbClient.query(
+Future<List<SyncedContact>> getLocalSyncedContacts(
+    String currentUserPhone) async {
+  final db = await dbMaker.db;
+  final maps = await db.query(
     "synedContacts",
     where: "currentUserPhone = ?",
     whereArgs: [currentUserPhone],
   );
-
-  return List.generate(maps.length, (i) {
-    return SyncedContact(
-      id: maps[i]['id'],
-      currentUserPhone: maps[i]['currentUserPhone'],
-      userName: maps[i]['userName'],
-      phoneNumber: maps[i]['phoneNumber'],
-    );
-  });
+  return maps
+      .map((m) => SyncedContact(
+            id: m['id'] as String,
+            currentUserPhone: m['currentUserPhone'] as String,
+            userName: m['userName'] as String,
+            phoneNumber: m['phoneNumber'] as String,
+          ))
+      .toList();
 }
+
+// ================================================================
+//  MESSAGES
+// ================================================================
 
 Future<void> insertMessage(Message msg) async {
-  final dbClient = await dbMaker.db;
-
-  await dbClient.insert(
-  "messages",
-  {
-    ...msg.toMap(), // ✅ spread operator
-    "currentUserPhone": currentUser!.phoneNumber,
-  },
-  conflictAlgorithm: ConflictAlgorithm.ignore,
-);
+  final db = await dbMaker.db;
+  await db.insert(
+    "messages",
+    {
+      ...msg.toMap(),
+      "currentUserPhone": currentUser!.phoneNumber,
+    },
+    conflictAlgorithm: ConflictAlgorithm.ignore,
+  );
 }
 
-Future<List<Message>> getMessages(String myPhone, String otherPhone) async {
-  final dbClient = await dbMaker.db;
-
-  final result = await dbClient.query(
+/// Update the delivery/read status of a single message.
+Future<void> updateMessageStatus(String msgId, MessageStatus status) async {
+  final db = await dbMaker.db;
+  await db.update(
     "messages",
-    where: "currentUserPhone=? AND ((sender=? AND receiver=?) OR (sender=? AND receiver=?))",
-whereArgs: [myPhone, myPhone, otherPhone, otherPhone, myPhone],
+    {'status': status.name},
+    where: "id = ?",
+    whereArgs: [msgId],
+  );
+}
+
+/// Mark all messages from [senderPhone] as read.
+Future<void> markAllAsRead(String senderPhone) async {
+  final db = await dbMaker.db;
+  await db.update(
+    "messages",
+    {'status': MessageStatus.read.name},
+    where:
+        "sender = ? AND currentUserPhone = ? AND status != ?",
+    whereArgs: [
+      senderPhone,
+      currentUser!.phoneNumber,
+      MessageStatus.read.name,
+    ],
+  );
+}
+
+Future<List<Message>> getMessages(
+    String myPhone, String otherPhone) async {
+  final db = await dbMaker.db;
+  final result = await db.query(
+    "messages",
+    where:
+        "currentUserPhone=? AND ((sender=? AND receiver=?) OR (sender=? AND receiver=?))",
+    whereArgs: [myPhone, myPhone, otherPhone, otherPhone, myPhone],
     orderBy: "time DESC",
   );
-
-  return result.map((e) => Message(
-    id: e["id"] as String,
-    sender: e["sender"] as String,
-    receiver: e["receiver"] as String,
-    message: e["message"] as String,
-    time: e["time"] as String,
-    type: e["type"] as String,
-    isMe: e["sender"] == myPhone,
-  )).toList();
+  return result
+      .map((e) => Message(
+            id: e["id"] as String,
+            sender: e["sender"] as String,
+            receiver: e["receiver"] as String,
+            message: e["message"] as String,
+            time: e["time"] as String,
+            type: e["type"] as String,
+            isMe: e["sender"] == myPhone,
+            status: _statusFromString(e["status"] as String? ?? 'sent'),
+          ))
+      .toList();
 }
+
+MessageStatus _statusFromString(String s) {
+  switch (s) {
+    case 'delivered':
+      return MessageStatus.delivered;
+    case 'read':
+      return MessageStatus.read;
+    default:
+      return MessageStatus.sent;
+  }
+}
+
+// ================================================================
+//  CHAT LIST
+// ================================================================
 
 Future<bool> addNewChat(ChatList ctl) async {
   try {
-    final dbClient = await dbMaker.db; // Use the instance
-    await dbClient.insert(
+    final db = await dbMaker.db;
+    await db.insert(
       "chatList",
       {
-        'id': ctl.id, 
+        'id': ctl.id,
         'currentUserPhone': currentUser!.phoneNumber,
-        'receiverName':ctl.receiverName,
+        'receiverName': ctl.receiverName,
         'receiverNum': ctl.receiverNum,
         'lastMessage': ctl.lastMessage,
         'time': ctl.time,
+        'unreadCount': ctl.unreadCount,
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
-    return true; // Added missing return
-  } catch (e) {
+    return true;
+  } catch (_) {
     return false;
   }
 }
 
-Future<List<ChatList>> getAllChats(String myPhone) async {
-  final dbClient = await dbMaker.db;
+/// Increment unread count for [receiverNum] (called on incoming message).
+Future<void> incrementUnread(String receiverNum) async {
+  final db = await dbMaker.db;
+  await db.rawUpdate(
+    "UPDATE chatList SET unreadCount = unreadCount + 1 WHERE id = ? AND currentUserPhone = ?",
+    [receiverNum, currentUser!.phoneNumber],
+  );
+}
 
-  final maps = await dbClient.query(
+/// Reset unread count to 0 when user opens the chat.
+Future<void> resetUnread(String receiverNum) async {
+  final db = await dbMaker.db;
+  await db.update(
+    "chatList",
+    {'unreadCount': 0},
+    where: "id = ? AND currentUserPhone = ?",
+    whereArgs: [receiverNum, currentUser!.phoneNumber],
+  );
+}
+
+Future<List<ChatList>> getAllChats(String myPhone) async {
+  final db = await dbMaker.db;
+  final maps = await db.query(
     "chatList",
     where: "currentUserPhone = ?",
     whereArgs: [myPhone],
+    orderBy: "time DESC",
   );
-
-  return List.generate(maps.length, (i) {
-    return ChatList(
-  id: maps[i]['id'] as String,
-  receiverName: maps[i]['receiverName'] as String,
-  receiverNum: maps[i]['receiverNum'] as String,
-  lastMessage: maps[i]['lastMessage'] as String,
-  time: maps[i]['time'] as String,
-);
-  });
+  return maps
+      .map((m) => ChatList(
+            id: m['id'] as String,
+            receiverName: m['receiverName'] as String,
+            receiverNum: m['receiverNum'] as String,
+            lastMessage: m['lastMessage'] as String,
+            time: m['time'] as String,
+            unreadCount: (m['unreadCount'] as int?) ?? 0,
+          ))
+      .toList();
 }

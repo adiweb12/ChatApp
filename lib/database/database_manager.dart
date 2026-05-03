@@ -11,12 +11,12 @@ class DBmaker {
   }
 
   Future<Database> initDb() async {
-    String path = join(await getDatabasesPath(), "onechat_v1.db");
+    String path = join(await getDatabasesPath(), "onechat_v2.db");
     return await openDatabase(
-      path, 
-      version: 1, 
+      path,
+      version: 1,
       onCreate: (db, version) async {
-        // Table 1: User Info
+        // ── UserData ──
         await db.execute('''
           CREATE TABLE UserData(
             id TEXT PRIMARY KEY,
@@ -27,44 +27,48 @@ class DBmaker {
             dob TEXT
           )
         ''');
-        // Table 2: Synced Contacts (Linked to current user)
+
+        // ── Synced Contacts ──
         await db.execute('''
           CREATE TABLE synedContacts(
             id TEXT,
-            currentUserPhone TEXT, 
+            currentUserPhone TEXT,
             userName TEXT,
             phoneNumber TEXT,
-            PRIMARY KEY (id, currentUserPhone) 
+            PRIMARY KEY (id, currentUserPhone)
           )
         ''');
-        
-        //===TABLE 3 MESSAGES======
+
+        // ── Messages (+ status column) ──
         await db.execute('''
-            CREATE TABLE messages (
+          CREATE TABLE messages (
             id TEXT PRIMARY KEY,
             sender TEXT,
             receiver TEXT,
             message TEXT,
             time TEXT,
             type TEXT,
+            status TEXT DEFAULT 'sent',
             currentUserPhone TEXT
-            )
+          )
         ''');
-        
+
+        // ── Chat List (+ unreadCount) ──
         await db.execute('''
-        CREATE TABLE chatList(
-        id TEXT,
-        currentUserPhone TEXT,
-        receiverName TEXT,
-        receiverNum TEXT,
-        lastMessage TEXT,
-        time TEXT,
-        PRIMARY KEY (id, currentUserPhone)
-        )
+          CREATE TABLE chatList(
+            id TEXT,
+            currentUserPhone TEXT,
+            receiverName TEXT,
+            receiverNum TEXT,
+            lastMessage TEXT,
+            time TEXT,
+            unreadCount INTEGER DEFAULT 0,
+            PRIMARY KEY (id, currentUserPhone)
+          )
         ''');
-    
       },
     );
   }
 }
+
 final dbMaker = DBmaker();

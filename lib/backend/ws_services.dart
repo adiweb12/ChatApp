@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:onechat/models/models.dart';
@@ -8,72 +9,153 @@ import 'package:onechat/backend/api_services.dart';
 class WSService {
   static final WSService _instance = WSService._internal();
   factory WSService() => _instance;
-
   WSService._internal();
 
   WebSocketChannel? _channel;
+  Timer? _pingTimer;
+  bool _connected = false;
 
+  // Callbacks
   Function(Message msg)? onMessageReceived;
+  Function(String msgId, MessageStatus status)? onStatusUpdate;
 
-  Future<void> connect(String myPhone) async{
-    _channel = WebSocketChannel.connect(
-      Uri.parse(webSocketIp),
-    );
+  // ── Connect ───────────────────────────────────────────────────
+  Future<void> connect(String myPhone) async {
+    if (_connected) return;
+    try {
+      _channel = WebSocketChannel.connect(Uri.parse(webSocketIp));
 
-    // REGISTER USER
-    _channel!.sink.add(jsonEncode({
-      "type": "register",
-      "token": await getToken(),
-    }));
+      // Register with JWT
+      final token = await getToken();
+      _channel!.sink.add(jsonEncode({
+        "type": "register",
+        "token": token,
+      }));
 
-    // LISTEN
-    _channel!.stream.listen((data) async {
-  final json = jsonDecode(data);
+      _connected = true;
 
-  Message msg = Message(
-    id: json["id"],
-    sender: json["from"],
-    receiver: json["to"],
-    message: json["message"],
-    time: json["time"],
-    type: "text",
-    isMe: false,
-  );
+      // Keep-alive ping every 30 s
+      _pingTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+        _channel?.sink.add(jsonEncode({"type": "ping"}));
+      });
 
-  // CRITICAL: Await the database save before triggering the callback
-  await insertMessage(msg);
-
-  // Update the chat list so the home screen shows the latest snippet
-  await addNewChat(ChatList(
-    id: msg.sender,
-    receiverName: msg.sender, // The Home Screen mapping logic above will fix this name
-    receiverNum: msg.sender,
-    lastMessage: msg.message,
-    time: msg.time,
-  ));
-
-  // Trigger UI update
-  if (onMessageReceived != null) {
-    onMessageReceived!(msg);
-  }
-});
-
+      _channel!.stream.listen(
+        _onData,
+        onDone: _onDisconnect,
+        onError: (_) => _onDisconnect(),
+      );
+    } catch (e) {
+      _connected = false;
+    }
   }
 
-  Future<void> sendMessage(Message msg) async{
+  // ── Handle incoming data ──────────────────────────────────────
+  Future<void> _onData(dynamic raw) async {
+    try {
+      final json = jsonDecode(raw as String) as Map<String, dynamic>;
+      final type = json["type"] as String? ?? "message";
 
-  final token = await getToken();
+      // ── STATUS UPDATE (delivered / read) ──
+      if (type == "status") {
+        final msgId = json["id"] as String;
+        final status = _statusFromString(json["status"] as String);
+        await updateMessageStatus(msgId, status);
+        onStatusUpdate?.call(msgId, status);
+        return;
+      }
+
+      // ── INCOMING MESSAGE ──
+      if (type == "message" || type == null) {
+        final msg = Message(
+          id: json["id"] as String,
+          sender: json["from"] as String,
+          receiver: json["to"] as String,
+          message: json["message"] as String,
+          time: json["time"] as String,
+          type: _detectType(json["message"] as String),
+          isMe: false,
+          status: MessageStatus.delivered, // receiver got it → delivered
+        );
+
+        await insertMessage(msg);
+        await addNewChat(ChatList(
+          id: msg.sender,
+          receiverName: msg.sender,
+          receiverNum: msg.sender,
+          lastMessage: msg.message,
+          time: msg.time,
+          unreadCount: 1,
+        ));
+        await incrementUnread(msg.sender);
+
+        // Tell sender: delivered
+        _sendStatus(msg.id, msg.sender, "delivered");
+
+        onMessageReceived?.call(msg);
+      }
+    } catch (_) {}
+  }
+
+  // ── Send a chat message ───────────────────────────────────────
+  Future<void> sendMessage(Message msg) async {
+    final token = await getToken();
     _channel?.sink.add(jsonEncode({
       "type": "message",
-       "token": token,
+      "token": token,
       "id": msg.id,
       "from": msg.sender,
       "to": msg.receiver,
       "message": msg.message,
+      "msgType": msg.type,
     }));
   }
 
+  // ── Tell sender that we read their message ────────────────────
+  void sendReadReceipt(String msgId, String toPhone) {
+    _sendStatus(msgId, toPhone, "read");
+  }
+
+  void _sendStatus(String msgId, String toPhone, String status) {
+    _channel?.sink.add(jsonEncode({
+      "type": "status",
+      "id": msgId,
+      "to": toPhone,
+      "status": status,
+    }));
+  }
+
+  // ── Reconnect on disconnect ───────────────────────────────────
+  void _onDisconnect() {
+    _connected = false;
+    _pingTimer?.cancel();
+    Future.delayed(const Duration(seconds: 5), () {
+      if (currentUser != null) connect(currentUser!.phoneNumber);
+    });
+  }
+
   void disconnect() {
+    _pingTimer?.cancel();
     _channel?.sink.close();
+    _connected = false;
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────
+  String _detectType(String text) {
+    final urlRegex = RegExp(
+      r'https?://[^\s]+',
+      caseSensitive: false,
+    );
+    return urlRegex.hasMatch(text) ? "link" : "text";
+  }
+
+  MessageStatus _statusFromString(String s) {
+    switch (s) {
+      case 'delivered':
+        return MessageStatus.delivered;
+      case 'read':
+        return MessageStatus.read;
+      default:
+        return MessageStatus.sent;
+    }
   }
 }
